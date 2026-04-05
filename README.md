@@ -9,6 +9,7 @@ Sistema integral para la gestion de equipos, jugadores y estadisticas de una lig
 - [Caracteristicas](#caracteristicas)
 - [Requisitos Previos](#requisitos-previos)
 - [Instalacion](#instalacion)
+- [Configuracion de GitHub CLI](#configuracion-de-github-cli)
 - [Configuracion de MySQL Local](#configuracion-de-mysql-local)
 - [Scripts de Ejecucion](#scripts-de-ejecucion)
 - [Estructura de Carpetas](#estructura-de-carpetas)
@@ -35,7 +36,8 @@ Antes de comenzar, asegurate de tener instalados:
 - **Node.js** (v16 o superior) → [Descargar](https://nodejs.org/)
 - **npm** (incluido con Node.js)
 - **MySQL** (v8.0 o superior)
-- **Homebrew** (solo macOS, para instalar MySQL facilmente)
+- **GitHub CLI (`gh`)** (para pushear, crear PRs y gestionar el repo)
+- **Homebrew** (solo macOS, para instalar MySQL y gh facilmente)
 
 Verifica las versiones instaladas:
 
@@ -88,6 +90,64 @@ JWT_SECRET=tu_secreto_jwt_super_seguro
 ```
 
 > **Nota:** Si configuraste una contraseña para el usuario root de MySQL, completala en `DB_PASSWORD`.
+
+---
+
+## Configuracion de GitHub CLI
+
+GitHub CLI (`gh`) permite pushear codigo, crear Pull Requests y gestionar el repositorio desde la terminal sin necesidad de configurar tokens manualmente.
+
+### macOS
+
+```bash
+brew install gh
+```
+
+### Windows
+
+Descargar el instalador desde [cli.github.com](https://cli.github.com/) o instalar con winget:
+
+```bash
+winget install --id GitHub.cli
+```
+
+### Linux (Ubuntu/Debian)
+
+```bash
+sudo apt install gh
+```
+
+Para otras distribuciones ver [cli.github.com/packages](https://github.com/cli/cli/blob/trunk/docs/install_linux.md).
+
+### Autenticacion
+
+Una vez instalado, loguearse con tu cuenta de GitHub:
+
+```bash
+gh auth login
+```
+
+Seguir el asistente interactivo:
+1. Seleccionar **GitHub.com**
+2. Seleccionar **HTTPS** como protocolo
+3. Confirmar autenticacion con el navegador (se abre automaticamente)
+
+Para verificar que estas logueado:
+
+```bash
+gh auth status
+```
+
+Deberias ver algo como:
+
+```
+github.com
+  ✓ Logged in to github.com account TU_USUARIO (keyring)
+  - Active account: true
+  - Git operations protocol: https
+```
+
+> **Importante:** Sin `gh auth login`, los comandos `git push` y `gh pr create` no van a funcionar. Cada integrante del equipo debe loguearse con su propia cuenta.
 
 ---
 
