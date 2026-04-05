@@ -1,40 +1,41 @@
-# 🏀 TPO - Sistema de Gestión Liga de Básquet
+# TPO - Sistema de Gestion Liga de Basquet
 
-Sistema integral para la gestión de equipos, jugadores y estadísticas de una liga de básquet, construido con una arquitectura moderna de Monorepo.
+Sistema integral para la gestion de equipos, jugadores y estadisticas de una liga de basquet, construido con una arquitectura moderna de Monorepo.
 
 ---
 
-## 📋 Tabla de Contenidos
+## Tabla de Contenidos
 
-- [Características](#características)
+- [Caracteristicas](#caracteristicas)
 - [Requisitos Previos](#requisitos-previos)
-- [Instalación](#instalación)
-- [Scripts de Ejecución](#scripts-de-ejecución)
+- [Instalacion](#instalacion)
+- [Configuracion de MySQL Local](#configuracion-de-mysql-local)
+- [Scripts de Ejecucion](#scripts-de-ejecucion)
 - [Estructura de Carpetas](#estructura-de-carpetas)
-- [Configuración del Backend](#configuración-del-backend)
-- [Próximos Pasos](#próximos-pasos)
-- [Tecnologías Utilizadas](#tecnologías-utilizadas)
+- [Modelo de Base de Datos](#modelo-de-base-de-datos)
+- [Tecnologias Utilizadas](#tecnologias-utilizadas)
 
 ---
 
-## ✨ Características
+## Caracteristicas
 
-✅ **Frontend Moderno**: Interfaz responsive construida con React y Vite  
-✅ **Backend Robusto**: API REST con Express y Sequelize  
-✅ **Seguridad**: Autenticación con JWT y cifrado con Bcrypt  
-✅ **Validaciones**: Esquemas validados con Zod  
-✅ **Estilos**: Diseño elegante con Tailwind CSS  
-✅ **Base de Datos**: MySQL con ORM Sequelize  
+- **Frontend Moderno**: Interfaz responsive construida con React y Vite
+- **Backend Robusto**: API REST con Express y Sequelize (arquitectura MVC)
+- **Base de Datos**: MySQL con ORM Sequelize y sincronizacion automatica de tablas
+- **Seguridad**: Autenticacion con JWT y cifrado con Bcrypt
+- **Validaciones**: Esquemas validados con Zod
+- **Estilos**: Diseño con Tailwind CSS
 
 ---
 
-## 🔧 Requisitos Previos
+## Requisitos Previos
 
-Antes de comenzar, asegúrate de tener instalados:
+Antes de comenzar, asegurate de tener instalados:
 
 - **Node.js** (v16 o superior) → [Descargar](https://nodejs.org/)
 - **npm** (incluido con Node.js)
-- **MySQL** (v5.7 o superior) → [Descargar](https://www.mysql.com/downloads/)
+- **MySQL** (v8.0 o superior)
+- **Homebrew** (solo macOS, para instalar MySQL facilmente)
 
 Verifica las versiones instaladas:
 
@@ -46,16 +47,16 @@ mysql --version
 
 ---
 
-## 📦 Instalación
+## Instalacion
 
-### 1️⃣ Clonar el Repositorio
+### 1. Clonar el Repositorio
 
 ```bash
-git clone https://github.com/tu-usuario/tpo-liga-basquet.git
+git clone https://github.com/facMolina/tpo-liga-basquet.git
 cd tpo-liga-basquet
 ```
 
-### 2️⃣ Instalar Dependencias del Frontend
+### 2. Instalar Dependencias del Frontend
 
 ```bash
 cd client
@@ -63,7 +64,7 @@ npm install
 cd ..
 ```
 
-### 3️⃣ Instalar Dependencias del Backend
+### 3. Instalar Dependencias del Backend
 
 ```bash
 cd server
@@ -71,7 +72,7 @@ npm install
 cd ..
 ```
 
-### 4️⃣ Configurar Variables de Entorno
+### 4. Configurar Variables de Entorno
 
 En la carpeta `/server`, crea un archivo `.env`:
 
@@ -80,55 +81,177 @@ NODE_ENV=development
 PORT=3000
 DB_HOST=localhost
 DB_USER=root
-DB_PASSWORD=tu_contraseña
+DB_PASSWORD=
 DB_NAME=liga_basquet
+DB_PORT=3306
 JWT_SECRET=tu_secreto_jwt_super_seguro
 ```
 
-### 5️⃣ Inicializar la Base de Datos
-
-```bash
-cd server
-npm run db:setup  # Crea las tablas (configura esto en package.json)
-cd ..
-```
+> **Nota:** Si configuraste una contraseña para el usuario root de MySQL, completala en `DB_PASSWORD`.
 
 ---
 
-## 🚀 Scripts de Ejecución
+## Configuracion de MySQL Local
+
+Seguir estos pasos para instalar y configurar MySQL en tu maquina local.
+
+### macOS (con Homebrew)
+
+#### 1. Instalar MySQL
+
+```bash
+brew install mysql
+```
+
+#### 2. Iniciar el servicio de MySQL
+
+```bash
+brew services start mysql
+```
+
+Para verificar que esta corriendo:
+
+```bash
+brew services list
+```
+
+Deberias ver `mysql` con estado `started`.
+
+#### 3. Conectarse a MySQL
+
+MySQL se instala sin contraseña para el usuario `root`. Para conectarte:
+
+```bash
+mysql -u root
+```
+
+#### 4. Crear la base de datos
+
+Dentro de la consola de MySQL, ejecuta:
+
+```sql
+CREATE DATABASE IF NOT EXISTS liga_basquet;
+```
+
+Para verificar que se creo:
+
+```sql
+SHOW DATABASES;
+```
+
+Luego sali con:
+
+```sql
+EXIT;
+```
+
+#### 5. (Opcional) Asegurar la instalacion
+
+Si queres configurar una contraseña para root y mejorar la seguridad:
+
+```bash
+mysql_secure_installation
+```
+
+> **Importante:** Si configuras una contraseña, actualizala en el archivo `.env` (`DB_PASSWORD=tu_contraseña`).
+
+### Windows
+
+#### 1. Descargar MySQL
+
+Descargar el instalador desde [mysql.com/downloads](https://dev.mysql.com/downloads/mysql/).
+
+#### 2. Instalar
+
+Ejecutar el instalador y seguir el asistente. Seleccionar "MySQL Server" como minimo. Configurar la contraseña de root durante la instalacion.
+
+#### 3. Verificar la instalacion
+
+Abrir una terminal (cmd o PowerShell):
+
+```bash
+mysql -u root -p
+```
+
+Ingresar la contraseña configurada durante la instalacion.
+
+#### 4. Crear la base de datos
+
+```sql
+CREATE DATABASE IF NOT EXISTS liga_basquet;
+EXIT;
+```
+
+#### 5. Actualizar el `.env`
+
+Completar `DB_PASSWORD` con la contraseña que configuraste.
+
+### Linux (Ubuntu/Debian)
+
+#### 1. Instalar MySQL
+
+```bash
+sudo apt update
+sudo apt install mysql-server
+```
+
+#### 2. Iniciar el servicio
+
+```bash
+sudo systemctl start mysql
+sudo systemctl enable mysql
+```
+
+#### 3. Configurar y crear la base de datos
+
+```bash
+sudo mysql -u root
+```
+
+```sql
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'tu_contraseña';
+FLUSH PRIVILEGES;
+CREATE DATABASE IF NOT EXISTS liga_basquet;
+EXIT;
+```
+
+Actualizar `DB_PASSWORD` en el archivo `.env`.
+
+### Sincronizacion de tablas
+
+Una vez que MySQL esta corriendo y la base de datos `liga_basquet` fue creada, las tablas se generan automaticamente al levantar el servidor:
+
+```bash
+cd server
+npm run dev
+```
+
+Sequelize ejecuta `sync({ alter: true })` y crea las 5 tablas: `ligas`, `usuarios`, `equipos`, `jugadores` y `partidos`.
+
+---
+
+## Scripts de Ejecucion
 
 ### Frontend (localhost:5173)
 
 ```bash
 cd client
 npm run dev      # Inicia servidor de desarrollo con hot reload
-npm run build    # Compila para producción
-npm run preview  # Visualiza la build de producción
+npm run build    # Compila para produccion
+npm run preview  # Visualiza la build de produccion
 ```
 
 ### Backend (localhost:3000)
 
-Primero, agrega estos scripts a `/server/package.json`:
-
-```json
-"scripts": {
-  "dev": "nodemon index.js",
-  "start": "node index.js",
-  "db:setup": "node scripts/setup.js"
-}
-```
-
-Luego ejecuta:
-
 ```bash
 cd server
-npm run dev      # Inicia servidor con nodemon (recarga automática)
-npm start        # Inicia servidor en producción
+npm run dev      # Inicia servidor con nodemon (recarga automatica)
+npm start        # Inicia servidor en produccion
 ```
 
-### Ejecutar Ambos Simultáneamente (Optativo)
+### Ejecutar Ambos Simultaneamente
 
-Abre una terminal para cada proyecto:
+Abrir una terminal para cada proyecto:
 
 **Terminal 1 - Frontend:**
 ```bash
@@ -142,168 +265,137 @@ cd server && npm run dev
 
 ---
 
-## 📁 Estructura de Carpetas
+## Estructura de Carpetas
 
 ```
 tpo-liga-basquet/
-├── client/                    # 🎨 Frontend React + Vite
+├── client/                    # Frontend React + Vite
 │   ├── src/
 │   │   ├── main.jsx          # Punto de entrada React
 │   │   ├── App.jsx           # Componente principal
 │   │   ├── index.css         # Estilos globales + Tailwind
 │   │   └── components/       # Componentes reutilizables
 │   ├── index.html            # HTML base
-│   ├── vite.config.js        # Configuración Vite
-│   ├── tailwind.config.js    # Configuración Tailwind CSS
-│   ├── postcss.config.js     # Configuración PostCSS
+│   ├── vite.config.js        # Configuracion Vite
+│   ├── tailwind.config.js    # Configuracion Tailwind CSS
+│   ├── postcss.config.js     # Configuracion PostCSS
 │   └── package.json          # Dependencias frontend
 │
-├── server/                    # 🖥️ Backend Express + Node.js
+├── server/                    # Backend Express + Node.js (MVC)
 │   ├── config/
-│   │   └── database.js       # Configuración MySQL
+│   │   └── database.js       # Conexion Sequelize a MySQL
 │   ├── models/               # Modelos Sequelize
+│   │   ├── index.js          # Relaciones y exports
+│   │   ├── Liga.js
+│   │   ├── Usuario.js
 │   │   ├── Equipo.js
-│   │   └── Jugador.js
-│   ├── routes/               # Rutas API
-│   │   ├── equipos.js
-│   │   └── jugadores.js
-│   ├── middleware/           # Middlewares (autenticación, etc)
-│   │   └── auth.js
-│   ├── controllers/          # Lógica de negocio
-│   ├── index.js              # Punto de entrada servidor
+│   │   ├── Jugador.js
+│   │   └── Partido.js
+│   ├── controllers/          # Logica de negocio (proxima feature)
+│   ├── routes/               # Rutas API (proxima feature)
+│   ├── middleware/            # Middlewares - auth, validaciones (proxima feature)
+│   ├── app.js                # Punto de entrada del servidor
+│   ├── .env                  # Variables de entorno (no versionado)
 │   └── package.json          # Dependencias backend
 │
-├── .gitignore                # Archivos a ignorar en Git
-└── README.md                 # Este archivo 📄
+├── .gitignore                # Archivos ignorados en Git
+└── README.md                 # Este archivo
 ```
 
 ---
 
-## ⚙️ Configuración del Backend
+## Modelo de Base de Datos
 
-### Crear Archivo de Entrada `/server/index.js`
+### Tablas
 
-```javascript
-const express = require('express');
-const cors = require('cors');
-require('dotenv').config();
+#### Liga
+| Campo       | Tipo    | Restricciones          |
+|-------------|---------|------------------------|
+| idLiga      | INTEGER | PK, Auto-incremental   |
+| nombre      | STRING  | NOT NULL               |
+| temporada   | STRING  | NOT NULL               |
+| descripcion | TEXT    | Permite NULL           |
 
-const app = express();
+#### Usuario
+| Campo         | Tipo    | Restricciones          |
+|---------------|---------|------------------------|
+| idUsuario     | INTEGER | PK, Auto-incremental   |
+| usuario       | STRING  | NOT NULL, UNIQUE       |
+| password_hash | STRING  | NOT NULL               |
 
-// Middlewares
-app.use(cors());
-app.use(express.json());
+#### Equipo
+| Campo             | Tipo    | Restricciones          |
+|-------------------|---------|------------------------|
+| idEquipo          | INTEGER | PK, Auto-incremental   |
+| nombre            | STRING  | NOT NULL               |
+| entrenador        | STRING  | NOT NULL               |
+| partidosGanados   | INTEGER | Default 0              |
+| partidosEmpatados | INTEGER | Default 0              |
+| partidosPerdidos  | INTEGER | Default 0              |
+| puntosFavor       | INTEGER | Default 0              |
+| puntosEnContra    | INTEGER | Default 0              |
 
-// Rutas
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'Backend funcionando ✅' });
-});
+#### Jugador
+| Campo     | Tipo    | Restricciones                          |
+|-----------|---------|----------------------------------------|
+| idJugador | INTEGER | PK, Auto-incremental                   |
+| nombre    | STRING  | NOT NULL                               |
+| apellido  | STRING  | NOT NULL                               |
+| categoria | STRING  | NOT NULL                               |
+| idEquipo  | INTEGER | FK a Equipo, Permite NULL, ON DELETE SET NULL |
 
-// Iniciar servidor
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-});
-```
+#### Partido
+| Campo           | Tipo     | Restricciones        |
+|-----------------|----------|----------------------|
+| idPartido       | INTEGER  | PK, Auto-incremental |
+| fecha           | DATEONLY | NOT NULL             |
+| hora            | TIME     | NOT NULL             |
+| lugar           | STRING   | NOT NULL             |
+| puntosLocal     | INTEGER  | Permite NULL         |
+| puntosVisitante | INTEGER  | Permite NULL         |
+| idLocal         | INTEGER  | FK a Equipo          |
+| idVisitante     | INTEGER  | FK a Equipo          |
 
-### Crear Archivo `.env.example`
+### Relaciones
 
-```env
-NODE_ENV=development
-PORT=3000
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=
-DB_NAME=liga_basquet
-JWT_SECRET=tu_secreto_jwt_aqui
-```
-
----
-
-## 🔜 Próximos Pasos
-
-Una vez que tengas el entorno funcionando:
-
-1. **🗄️ Configurar la Base de Datos**
-   - Crear modelos Sequelize para `Equipo` y `Jugador`
-   - Ejecutar migraciones automáticas
-
-2. **🛣️ Crear Rutas API**
-   - GET/POST/PUT/DELETE para equipos
-   - GET/POST/PUT/DELETE para jugadores
-   - Autenticación JWT
-
-3. **🎨 Desarrollar Componentes Frontend**
-   - Página de Login
-   - Dashboard de Equipos
-   - Lista de Jugadores
-   - Formularios de CRUD
-
-4. **🔐 Implementar Seguridad**
-   - Validaciones con Zod
-   - Autenticación con JWT
-   - Cifrado de contraseñas con Bcrypt
-
-5. **🚀 Deploy**
-   - Vercel para el frontend
-   - Railway/Heroku para el backend
-   - Base de datos en la nube (Clever Cloud, PlanetScale)
+- **Equipo** 1:N **Jugador** — Un equipo tiene muchos jugadores. Si se elimina el equipo, `idEquipo` del jugador se setea en NULL.
+- **Equipo** 1:N **Partido (Local)** — Un equipo tiene muchos partidos como local (`idLocal`).
+- **Equipo** 1:N **Partido (Visitante)** — Un equipo tiene muchos partidos como visitante (`idVisitante`).
 
 ---
 
-## 🛠️ Tecnologías Utilizadas
+## Tecnologias Utilizadas
 
 ### Frontend
-| Tecnología | Versión | Propósito |
-|-----------|---------|----------|
-| React | 18.2+ | Librería UI |
-| Vite | 5.4+ | Bundler rápido |
-| Tailwind CSS | 4.2+ | Estilos CSS |
-| Lucide-React | 0.294+ | Iconos |
-| React Router | 6.18+ | Navegación |
+| Tecnologia    | Version | Proposito       |
+|---------------|---------|-----------------|
+| React         | 18.2+   | Libreria UI     |
+| Vite          | 5.4+    | Bundler rapido  |
+| Tailwind CSS  | 4.2+    | Estilos CSS     |
+| Lucide-React  | 0.294+  | Iconos          |
+| React Router  | 6.18+   | Navegacion      |
 
 ### Backend
-| Tecnología | Versión | Propósito |
-|-----------|---------|----------|
-| Node.js | 16+ | Runtime JavaScript |
-| Express | 5.2+ | Framework web |
-| Sequelize | 6.37+ | ORM MySQL |
-| MySQL2 | 3.20+ | Driver MySQL |
-| JWT | 9.0+ | Autenticación |
-| Bcrypt | 3.0+ | Cifrado |
-| Zod | 4.3+ | Validaciones |
-| Dotenv | 17.3+ | Variables de entorno |
+| Tecnologia  | Version | Proposito            |
+|-------------|---------|----------------------|
+| Node.js     | 16+     | Runtime JavaScript   |
+| Express     | 5.2+    | Framework web        |
+| Sequelize   | 6.37+   | ORM MySQL            |
+| MySQL2      | 3.20+   | Driver MySQL         |
+| JWT         | 9.0+    | Autenticacion        |
+| Bcrypt      | 3.0+    | Cifrado              |
+| Zod         | 3.23+   | Validaciones         |
+| Dotenv      | 17.3+   | Variables de entorno |
 
 ---
 
-## 📚 Recursos Útiles
-
-- [Documentación React](https://es.react.dev/)
-- [Documentación Vite](https://vitejs.dev/)
-- [Documentación Tailwind CSS](https://tailwindcss.com/)
-- [Documentación Express](https://expressjs.com/)
-- [Documentación Sequelize](https://sequelize.org/)
-- [JWT Basics](https://jwt.io/)
-
----
-
-## 👥 Equipo
+## Equipo
 
 - **Facundo** - Full Stack Developer
 - **Mateo** - Full Stack Developer
 
 ---
 
-## 📝 Licencia
+## Licencia
 
-Este proyecto es de código cerrado para uso académico (TPO).
-
----
-
-## 💬 Soporte
-
-Si encuentras problemas, abre un issue en el repositorio o contacta al equipo de desarrollo.
-
----
-
-**Última actualización**: Marzo 2026 📅
+Este proyecto es de codigo cerrado para uso academico (TPO).
