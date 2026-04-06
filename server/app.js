@@ -1,0 +1,34 @@
+const express = require('express');
+const cors = require('cors');
+require('dotenv').config();
+
+const sequelize = require('./config/database');
+const models = require('./models');
+
+const app = express();
+
+// Middlewares
+app.use(cors());
+app.use(express.json());
+
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'OK', message: 'Backend funcionando correctamente' });
+});
+
+// Sincronizar DB y levantar servidor
+const PORT = process.env.PORT || 3000;
+
+sequelize
+  .sync({ alter: true })
+  .then(() => {
+    console.log('Base de datos sincronizada correctamente.');
+    app.listen(PORT, () => {
+      console.log(`Servidor corriendo en http://localhost:${PORT}`);
+    });
+  })
+  .catch((error) => {
+    console.error('Error al sincronizar la base de datos:', error);
+  });
+
+module.exports = app;
