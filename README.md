@@ -23,7 +23,7 @@ Sistema integral para la gestion de equipos, jugadores y estadisticas de una lig
 - **Frontend Moderno**: Interfaz responsive construida con React y Vite
 - **Backend Robusto**: API REST con Express y Sequelize (arquitectura MVC)
 - **Base de Datos**: MySQL con ORM Sequelize y sincronizacion automatica de tablas
-- **Seguridad**: Autenticacion con JWT y cifrado con Bcrypt
+- **Seguridad**: [x] Autenticacion con JWT y cifrado con Bcrypt
 - **Validaciones**: Esquemas validados con Zod
 - **Estilos**: Diseño con Tailwind CSS
 
