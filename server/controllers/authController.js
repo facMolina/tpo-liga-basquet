@@ -1,9 +1,19 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { z } = require('zod');
 const { Usuario } = require('../models');
 
+const loginSchema = z.object({
+  usuario: z.string().min(1, { message: 'El usuario es requerido' }),
+  password: z.string().min(1, { message: 'La contraseña es requerida' }),
+});
+
 const login = async (req, res) => {
-  const { usuario, password } = req.body;
+  const validation = loginSchema.safeParse(req.body);
+  if (!validation.success) {
+    return res.status(400).json({ errors: validation.error.errors });
+  }
+  const { usuario, password } = validation.data;
 
   try {
     const user = await Usuario.findOne({ where: { usuario } });
