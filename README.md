@@ -202,8 +202,12 @@ El backend sigue una arquitectura MVC estricta: `models/` define las entidades y
 
 - **Autenticación JWT**: Las rutas administrativas requieren el header `Authorization: Bearer <token>`. El token expira en 12 horas.
 - **Cifrado de contraseñas**: bcryptjs con salt rounds = 10.
-- **Validación de entradas**: Todos los endpoints validan con Zod antes de tocar la base de datos. Los errores de validación retornan 400 con el detalle de cada campo.
-- **Integridad referencial**: FK con `ON DELETE RESTRICT` en partidos impide eliminar equipos con historial de partidos.
+- **Rate limiting**: Login limitado a 20 intentos por IP cada 15 minutos. Exceder el límite devuelve 429.
+- **CORS restringido**: Solo acepta requests de orígenes en `CORS_ORIGIN` (por defecto `localhost:5173` y `localhost:3000`).
+- **Validación de entradas**: Todos los endpoints usan schemas Zod con `.strict()` — rechaza campos desconocidos y aplica límites de tamaño en todos los strings.
+- **Validación de IDs**: Middleware `validateId` en todas las rutas con `:id` — rechaza IDs no enteros o negativos con 400.
+- **Nombres únicos**: No se puede crear un equipo con un nombre ya existente (409).
+- **Integridad referencial**: FK con `ON DELETE RESTRICT` en partidos impide eliminar equipos con historial de partidos (409).
 - **Transacciones**: La carga de resultados usa `sequelize.transaction()` con `SELECT ... FOR UPDATE` para garantizar consistencia bajo concurrencia.
 
 ---
@@ -267,6 +271,7 @@ DB_PORT=3306
 JWT_SECRET=tu_secreto_jwt_super_seguro
 ADMIN_USER=admin
 ADMIN_PASSWORD=adminpassword
+CORS_ORIGIN=http://localhost:5173,http://localhost:3000
 ```
 
 **Credenciales de prueba:**
@@ -340,9 +345,12 @@ GET http://localhost:3000/api/clasificacion
 | Ruta protegida sin token | 401 | `{"error":"Autenticación requerida"}` |
 | Header mal formado (no Bearer) | 401 | `{"error":"Formato de autorización inválido. Use Bearer <token>"}` |
 | Token inválido o expirado | 403 | `{"error":"Token inválido o expirado"}` |
+| Demasiados intentos de login | 429 | `{"error":"Demasiados intentos de login. Intentá de nuevo en 15 minutos."}` |
+| ID no es un entero positivo en la URL | 400 | `{"error":"El ID debe ser un entero positivo"}` |
 | Recurso no encontrado | 404 | `{"error":"... no encontrado"}` |
-| Body inválido o campos faltantes | 400 | `{"errors":[...]}` |
+| Body inválido, campos faltantes o campos extra | 400 | `{"errors":[...]}` |
 | idEquipo/idLocal/idVisitante inexistente | 400 | `{"error":"El equipo ... no existe"}` |
+| Nombre de equipo duplicado | 409 | `{"error":"Ya existe un equipo con ese nombre"}` |
 | Equipo con partidos asociados (DELETE) | 409 | `{"error":"No se puede eliminar el equipo: tiene N partido(s) asociado(s)"}` |
 | Partido con resultado ya cargado (PUT/DELETE) | 400 | `{"error":"No se puede modificar/eliminar un partido con resultado cargado"}` |
 | Resultado ya cargado (POST resultado) | 400 | `{"error":"El resultado de este partido ya fue cargado"}` |
