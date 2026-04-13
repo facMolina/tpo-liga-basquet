@@ -11,6 +11,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Rutas
+const authRoutes = require('./routes/auth');
+app.use('/api/auth', authRoutes);
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Backend funcionando correctamente' });

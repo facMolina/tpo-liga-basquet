@@ -23,7 +23,7 @@ Sistema integral para la gestion de equipos, jugadores y estadisticas de una lig
 - **Frontend Moderno**: Interfaz responsive construida con React y Vite
 - **Backend Robusto**: API REST con Express y Sequelize (arquitectura MVC)
 - **Base de Datos**: MySQL con ORM Sequelize y sincronizacion automatica de tablas
-- **Seguridad**: Autenticacion con JWT y cifrado con Bcrypt
+- **Seguridad**: [x] Autenticacion con JWT y cifrado con Bcrypt
 - **Validaciones**: Esquemas validados con Zod
 - **Estilos**: Diseño con Tailwind CSS
 
@@ -288,6 +288,17 @@ npm run dev
 
 Sequelize ejecuta `sync({ alter: true })` y crea las 5 tablas: `ligas`, `usuarios`, `equipos`, `jugadores` y `partidos`.
 
+### 6. Crear el usuario administrador inicial
+
+Una sola vez, ejecutar el script seed para insertar el usuario `admin` en la base de datos:
+
+```bash
+cd server
+node scripts/seedAdmin.js
+```
+
+> **Nota:** El seed es idempotente — si el usuario ya existe, no falla ni lo duplica.
+
 ---
 
 ## Scripts de Ejecucion
@@ -351,9 +362,14 @@ tpo-liga-basquet/
 │   │   ├── Equipo.js
 │   │   ├── Jugador.js
 │   │   └── Partido.js
-│   ├── controllers/          # Logica de negocio (proxima feature)
-│   ├── routes/               # Rutas API (proxima feature)
-│   ├── middleware/            # Middlewares - auth, validaciones (proxima feature)
+│   ├── controllers/          # Logica de negocio
+│   │   └── authController.js # Login con validacion Zod + JWT
+│   ├── routes/               # Rutas API
+│   │   └── auth.js           # POST /api/auth/login | GET /api/auth/me
+│   ├── middleware/           # Middlewares
+│   │   └── auth.js           # authenticateJWT — protege rutas privadas
+│   ├── scripts/
+│   │   └── seedAdmin.js      # Crea el usuario admin inicial
 │   ├── app.js                # Punto de entrada del servidor
 │   ├── .env                  # Variables de entorno (no versionado)
 │   └── package.json          # Dependencias backend
