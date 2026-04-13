@@ -16,11 +16,15 @@ const authRoutes = require('./routes/auth');
 const ligaRoutes = require('./routes/liga');
 const equipoRoutes = require('./routes/equipo');
 const jugadorRoutes = require('./routes/jugador');
+const partidoRoutes = require('./routes/partido');
+const clasificacionRoutes = require('./routes/clasificacion');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/ligas', ligaRoutes);
 app.use('/api/equipos', equipoRoutes);
 app.use('/api/jugadores', jugadorRoutes);
+app.use('/api/partidos', partidoRoutes);
+app.use('/api/clasificacion', clasificacionRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
