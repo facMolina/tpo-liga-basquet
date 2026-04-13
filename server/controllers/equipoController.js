@@ -1,4 +1,5 @@
 const { z } = require('zod');
+const { Op } = require('sequelize');
 const { Equipo, Jugador, Partido } = require('../models');
 
 const equipoCreateSchema = z.object({
@@ -9,11 +10,6 @@ const equipoCreateSchema = z.object({
 const equipoUpdateSchema = z.object({
   nombre: z.string().min(1, { message: 'El nombre es requerido' }).optional(),
   entrenador: z.string().min(1, { message: 'El entrenador es requerido' }).optional(),
-  partidosGanados: z.number().int().min(0).optional(),
-  partidosEmpatados: z.number().int().min(0).optional(),
-  partidosPerdidos: z.number().int().min(0).optional(),
-  puntosFavor: z.number().int().min(0).optional(),
-  puntosEnContra: z.number().int().min(0).optional(),
 });
 
 const getAll = async (req, res) => {
@@ -92,6 +88,14 @@ const destroy = async (req, res) => {
     const equipo = await Equipo.findByPk(req.params.id);
     if (!equipo) {
       return res.status(404).json({ error: 'Equipo no encontrado' });
+    }
+    const totalPartidos = await Partido.count({
+      where: { [Op.or]: [{ idLocal: req.params.id }, { idVisitante: req.params.id }] },
+    });
+    if (totalPartidos > 0) {
+      return res.status(409).json({
+        error: `No se puede eliminar el equipo: tiene ${totalPartidos} partido(s) asociado(s). Eliminá los partidos primero.`,
+      });
     }
     await Jugador.update({ idEquipo: null }, { where: { idEquipo: req.params.id } });
     await equipo.destroy();

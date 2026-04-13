@@ -11,11 +11,11 @@ Equipo.hasMany(Jugador, { foreignKey: 'idEquipo', onDelete: 'SET NULL' });
 Jugador.belongsTo(Equipo, { foreignKey: 'idEquipo' });
 
 // Equipo 1:N Partido como Local
-Equipo.hasMany(Partido, { foreignKey: 'idLocal', as: 'partidosLocal' });
+Equipo.hasMany(Partido, { foreignKey: 'idLocal', as: 'partidosLocal', onDelete: 'RESTRICT' });
 Partido.belongsTo(Equipo, { foreignKey: 'idLocal', as: 'equipoLocal' });
 
 // Equipo 1:N Partido como Visitante
-Equipo.hasMany(Partido, { foreignKey: 'idVisitante', as: 'partidosVisitante' });
+Equipo.hasMany(Partido, { foreignKey: 'idVisitante', as: 'partidosVisitante', onDelete: 'RESTRICT' });
 Partido.belongsTo(Equipo, { foreignKey: 'idVisitante', as: 'equipoVisitante' });
 
 module.exports = {
