@@ -1,3 +1,77 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+---
+
+## Arquitectura
+
+Monorepo con dos proyectos independientes:
+
+- **`client/`** — React 18 + Vite + Tailwind CSS. Punto de entrada: `src/main.jsx`. El frontend aun esta en etapa inicial (`App.jsx` es un placeholder).
+- **`server/`** — Node.js + Express 5 + Sequelize 6 + MySQL. Arquitectura MVC estricta: `models/` → `controllers/` → `routes/` → `app.js`.
+
+### Backend: flujo de una request
+1. `app.js` monta las rutas bajo `/api/`
+2. Rutas protegidas pasan por `middleware/auth.js` (`authenticateJWT`)
+3. El controller valida con Zod, llama al modelo Sequelize, responde JSON
+4. `models/index.js` define todas las relaciones entre modelos
+
+### Modelos y relaciones clave
+- `Equipo` 1:N `Jugador` — `ON DELETE SET NULL` (eliminar equipo no borra jugadores)
+- `Equipo` 1:N `Partido` — dos FKs: `idLocal` (alias `partidosLocal`) e `idVisitante` (alias `partidosVisitante`)
+- Al usar `include` en queries de Partido, siempre especificar el alias correcto
+
+### Auth
+- `POST /api/auth/login` → devuelve JWT firmado con `JWT_SECRET`
+- Header esperado: `Authorization: Bearer <token>`
+- `authenticateJWT` rechaza con 401 si falta header, 401 si mal formato, 403 si token inválido
+
+---
+
+## Comandos
+
+### Backend
+```bash
+cd server
+npm run dev      # nodemon, recarga automática
+npm start        # producción
+node scripts/seedAdmin.js  # crear usuario admin (idempotente)
+```
+
+### Frontend
+```bash
+cd client
+npm run dev      # Vite dev server (localhost:5173)
+npm run build
+```
+
+### Verificar que el backend responde
+```bash
+curl http://localhost:3000/api/health
+```
+
+---
+
+## Variables de entorno (`server/.env`)
+
+```
+NODE_ENV=development
+PORT=3000
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=
+DB_NAME=liga_basquet
+DB_PORT=3306
+JWT_SECRET=tu_secreto_jwt_super_seguro
+ADMIN_USER=admin
+ADMIN_PASSWORD=adminpassword
+```
+
+La DB se sincroniza automáticamente con `sequelize.sync({ alter: true })` al levantar el servidor. Crear la DB antes: `CREATE DATABASE IF NOT EXISTS liga_basquet;`
+
+---
+
 # Reglas para Claude Code — Ahorra Tokens
 
 ## 1. No programar sin contexto

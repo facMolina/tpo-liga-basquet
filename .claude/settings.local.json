@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e ':*)",
+      "Bash(node app.js)",
+      "Bash(curl -s http://localhost:3000/api/health)"
+    ]
+  }
+}
