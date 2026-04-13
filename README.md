@@ -352,8 +352,7 @@ GET http://localhost:3000/api/clasificacion
 
 ## Plan de Pruebas
 
-El plan de pruebas de regresión completo se encuentra en [`testplan.md`](./testplan.md).
-Los casos de prueba detallados (inputs/outputs exactos) están en [`TEST_CASES.md`](./TEST_CASES.md).
+El plan de pruebas completo (casos detallados, inputs/outputs, escenarios de seguridad y desempate) se encuentra en [`testplan.md`](./testplan.md).
 
 ---
 

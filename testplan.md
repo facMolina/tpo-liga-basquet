@@ -1,5 +1,7 @@
 # Plan de Pruebas — API Liga de Básquet
 
+Base URL: `http://localhost:3000/api`
+
 ## Pre-condiciones
 
 1. MySQL corriendo con DB `liga_basquet` creada
@@ -12,10 +14,8 @@
 ```
 POST http://localhost:3000/api/auth/login
 Body: {"usuario":"admin","password":"adminpassword"}
-→ copiar valor de "token" y setear como variable de entorno en Thunder Client
+→ copiar valor de "token" y setear como variable {{token}} en el entorno de Thunder Client
 ```
-
-**Referencia de casos detallados:** Ver [TEST_CASES.md](./TEST_CASES.md) para inputs/outputs exactos de cada caso.
 
 ---
 
@@ -29,101 +29,221 @@ Body: {"usuario":"admin","password":"adminpassword"}
 
 ## 2. Autenticación — POST /api/auth/login
 
-Ver TEST_CASES.md casos A1–A13.
+### Casos felices
+| ID | Body | Esperado |
+|----|------|----------|
+| A1 | `{"usuario":"admin","password":"adminpassword"}` | 200 + token JWT |
 
-| ID | Descripción | Referencia |
-|----|-------------|------------|
-| T-A1 | Login exitoso → JWT | A1 |
-| T-A2 | Campos vacíos o faltantes → 400 Zod | A2–A6 |
-| T-A3 | Credenciales inválidas → 401 | A7–A8 |
-| T-A4 | Ataques (injection, payload masivo) | A9–A13 |
+### Validación de esquema (Zod)
+| ID | Body | Esperado |
+|----|------|----------|
+| A2 | `{}` | 400 — ambos campos requeridos |
+| A3 | `{"usuario":"","password":"adminpassword"}` | 400 — usuario min(1) |
+| A4 | `{"usuario":"admin","password":""}` | 400 — password min(1) |
+| A5 | `{"usuario":"admin"}` | 400 — falta password |
+| A6 | `{"password":"adminpassword"}` | 400 — falta usuario |
+
+### Credenciales inválidas
+| ID | Body | Esperado |
+|----|------|----------|
+| A7 | `{"usuario":"noexiste","password":"x"}` | 401 — misma respuesta que contraseña incorrecta (no revelar si usuario existe) |
+| A8 | `{"usuario":"admin","password":"mal"}` | 401 |
+
+### Ataques
+| ID | Descripción | Esperado |
+|----|-------------|----------|
+| A9 | Body con campo extra `"rol":"superadmin"` | 200 (campo ignorado por Zod — no hay elevación de privilegios) |
+| A10 | `{"usuario":{"$ne":""},"password":{"$ne":""}}` (NoSQL injection) | 400 — Zod rechaza no-string |
+| A11 | Password con 10.000 caracteres | No debe colgar el servidor |
+| A12 | 50 requests en < 1 segundo (brute force) | No hay rate limiting — **vulnerabilidad documentada** |
+| A13 | Content-Type omitido, body como form-urlencoded | 400 o 401 — sin JSON parser no llega data |
 
 ---
 
 ## 3. Middleware JWT — rutas protegidas
 
-Ver TEST_CASES.md casos M1–M10. Usar `POST /api/equipos` como ruta de prueba.
+Usar `POST /api/equipos` como ruta de prueba.
 
-| ID | Header | Esperado |
-|----|--------|----------|
-| T-M1 | Sin header | 401 "Autenticación requerida" |
-| T-M2 | `Bearer ` (token vacío) | 401 o 403 |
-| T-M3 | `Token abc123` | 401 "Formato inválido" |
-| T-M4 | `Bearer tokeninvalido` | 403 "Token inválido o expirado" |
-| T-M5 | `Bearer {{token}}` válido | Pasa al controller |
-| T-M6 | `bearer {{token}}` (minúscula) | 401 |
-
----
-
-## 4. Liga — GET /api/ligas / PUT /api/ligas/:id
-
-Ver TEST_CASES.md casos L1–L15.
-
-| ID | Descripción | Referencia |
-|----|-------------|------------|
-| T-L1 | GET /api/ligas → 200 array | L1 |
-| T-L2 | GET /api/ligas/1 → 200 + objeto liga | L2 |
-| T-L3 | GET /api/ligas/99999 → 404 | L3 |
-| T-L4 | PUT válido → 200 | L9, L12–L13 |
-| T-L5 | PUT campos inválidos → 400 | L10–L11 |
+| ID | Header Authorization | Esperado |
+|----|----------------------|----------|
+| M1 | Ausente | 401 `{"error":"Autenticación requerida"}` |
+| M2 | `Bearer ` (token vacío) | 403 o 401 |
+| M3 | `Token abc123` (esquema incorrecto) | 401 `{"error":"Formato de autorización inválido. Use Bearer <token>"}` |
+| M4 | `Bearer abc123` (JWT inválido) | 403 `{"error":"Token inválido o expirado"}` |
+| M5 | `Bearer {{token}}` válido | Pasa al controller |
+| M6 | `Bearer <token expirado>` | 403 |
+| M7 | `Bearer <token firmado con otro secret>` | 403 |
+| M8 | `bearer {{token}}` (minúscula) | 401 — `parts[0] !== 'Bearer'` |
+| M9 | `Bearer token1 token2` (3 partes) | 401 — `parts.length !== 2` |
+| M10 | JWT con payload adulterado (cambiar `idUsuario` en base64 sin re-firmar) | 403 — firma inválida |
 
 ---
 
-## 5. Equipos — CRUD /api/equipos
+## 4. Liga — /api/ligas
 
-Ver TEST_CASES.md casos E1–E27.
+### GET /api/ligas
+| ID | Descripción | Esperado |
+|----|-------------|----------|
+| L1 | Sin auth | 200 — array |
 
-| ID | Descripción | Referencia |
-|----|-------------|------------|
-| T-E1 | GET all → 200 array | E1 |
-| T-E2 | GET /:id existente → 200 + jugadores + partidos | E2 |
-| T-E3 | GET /:id inexistente → 404 | E3 |
-| T-E4 | POST válido → 201 | E6 |
-| T-E5 | POST sin campos → 400 | E7–E10 |
-| T-E6 | PUT nombre/entrenador → 200 | E16 |
-| T-E7 | PUT con stats en body → 400 (schema rechaza) | E17–E19 |
-| T-E8 | DELETE sin partidos → 200, jugadores con idEquipo=null | E24, E26 |
-| T-E9 | DELETE con partidos → **409** "tiene N partido(s) asociado(s)" | E27 |
+### GET /api/ligas/:id
+| ID | :id | Esperado |
+|----|-----|----------|
+| L2 | ID existente | 200 + objeto liga |
+| L3 | ID inexistente (ej. 99999) | 404 |
+| L4 | `abc` (no numérico) | 404 o 500 — Sequelize recibe NaN |
+| L5 | `0` | 404 |
+| L6 | `-1` | 404 |
+| L7 | `1.5` | Sin validación de entero — puede ser 404 |
+| L8 | `1; DROP TABLE ligas--` (SQL injection en path) | 404 o 500 — Sequelize usa prepared statements, no hay injection |
 
----
-
-## 6. Jugadores — CRUD /api/jugadores
-
-Ver TEST_CASES.md casos J1–J21.
-
-| ID | Descripción | Referencia |
-|----|-------------|------------|
-| T-J1 | GET all → 200 con equipo embebido | J1 |
-| T-J2 | GET /:id existente → 200 | J2 |
-| T-J3 | GET /:id inexistente → 404 | J3 |
-| T-J4 | POST con equipo válido → 201 | J6 |
-| T-J5 | POST con idEquipo inexistente → 400 | J7 |
-| T-J6 | PUT reasignar equipo → 200 | J14 |
-| T-J7 | PUT idEquipo null → 200 (desasigna) | J16 |
-| T-J8 | DELETE → 200 | J20 |
+### PUT /api/ligas/:id (requiere auth)
+| ID | Body | Esperado |
+|----|------|----------|
+| L9 | `{"nombre":"Liga X","temporada":"2025"}` | 200 |
+| L10 | `{}` | 400 — nombre y temporada requeridos |
+| L11 | `{"nombre":"","temporada":"2025"}` | 400 — nombre min(1) |
+| L12 | `{"nombre":"Liga X","temporada":"2025","descripcion":null}` | 200 — descripcion nullable |
+| L13 | `{"nombre":"Liga X","temporada":"2025","descripcion":"texto"}` | 200 |
+| L14 | PUT /api/ligas/99999 con body válido | 404 |
+| L15 | Body con campo extra `"idLiga":999` | Ignorado por Zod — no hay mass assignment |
 
 ---
 
-## 7. Partidos — CRUD /api/partidos
+## 5. Equipos — /api/equipos
 
-| ID | Método | URL | Body / Condición | Esperado |
-|----|--------|-----|-----------------|----------|
-| T-P1 | GET | `/api/partidos` | — | 200 array con equipoLocal y equipoVisitante |
-| T-P2 | GET | `/api/partidos/:id` | id existente | 200 + equipos embebidos |
-| T-P3 | GET | `/api/partidos/:id` | id inexistente | 404 |
-| T-P4 | POST | `/api/partidos` | `{"fecha":"2026-05-01","hora":"18:00","lugar":"Estadio X","idLocal":1,"idVisitante":2}` | 201 |
-| T-P5 | POST | `/api/partidos` | `idLocal == idVisitante` | 400 "no puede jugar contra sí mismo" |
-| T-P6 | POST | `/api/partidos` | `idLocal` inexistente | 400 "equipo local no existe" |
-| T-P7 | POST | `/api/partidos` | `idVisitante` inexistente | 400 "equipo visitante no existe" |
-| T-P8 | POST | `/api/partidos` | sin auth | 401 |
-| T-P9 | POST | `/api/partidos` | campos faltantes | 400 Zod errors |
-| T-P10 | POST | `/api/partidos` | `fecha` en formato incorrecto `"01/05/2026"` | 400 Zod |
-| T-P11 | PUT | `/api/partidos/:id` | `{"lugar":"Nuevo Estadio"}` (sin resultado) | 200 |
-| T-P12 | PUT | `/api/partidos/:id` | partido con resultado ya cargado | 400 "con resultado cargado" |
-| T-P13 | PUT | `/api/partidos/:id` | id inexistente | 404 |
-| T-P14 | DELETE | `/api/partidos/:id` | partido sin resultado | 200 |
-| T-P15 | DELETE | `/api/partidos/:id` | partido con resultado cargado | 400 |
-| T-P16 | DELETE | `/api/partidos/:id` | id inexistente | 404 |
+### GET /api/equipos
+| ID | Descripción | Esperado |
+|----|-------------|----------|
+| E1 | Sin auth | 200 — array |
+
+### GET /api/equipos/:id
+| ID | :id | Esperado |
+|----|-----|----------|
+| E2 | ID existente | 200 + equipo con jugadores y partidos (local y visitante) |
+| E3 | ID inexistente | 404 |
+| E4 | `abc` | 404 o 500 |
+| E5 | `0`, `-1` | 404 |
+
+### POST /api/equipos (requiere auth)
+| ID | Body | Esperado |
+|----|------|----------|
+| E6 | `{"nombre":"Boca","entrenador":"Juan"}` | 201 + equipo creado |
+| E7 | `{}` | 400 |
+| E8 | `{"nombre":"","entrenador":"Juan"}` | 400 |
+| E9 | `{"nombre":"Boca","entrenador":""}` | 400 |
+| E10 | `{"nombre":"Boca"}` | 400 — falta entrenador |
+| E11 | `{"nombre":"A","entrenador":"B","partidosGanados":999}` | 201 — campo extra ignorado por createSchema, stats quedan en 0 |
+| E12 | Nombre con 255+ caracteres | 201 o 500 — sin límite en Zod, depende de config MySQL |
+| E13 | `{"nombre":"<script>alert(1)</script>","entrenador":"x"}` | 201 — almacena literal; XSS es responsabilidad del cliente |
+| E14 | Nombre duplicado (mismo nombre que equipo existente) | 201 — no hay unique constraint |
+
+### PUT /api/equipos/:id (requiere auth)
+| ID | Body | Esperado |
+|----|------|----------|
+| E15 | `{"nombre":"Nuevo"}` | 200 — actualización parcial |
+| E16 | `{}` | 200 — sin cambios |
+| E17 | `{"nombre":""}` | 400 — min(1) aunque opcional |
+| E18 | `{"partidosGanados":1}` | 400 — campo no existe en schema |
+| E19 | PUT /api/equipos/99999 | 404 |
+| E20 | `{"idEquipo":999}` en body | Campo extra ignorado — no hay mass assignment |
+
+### DELETE /api/equipos/:id (requiere auth)
+| ID | Descripción | Esperado |
+|----|-------------|----------|
+| E21 | ID existente sin partidos | 200 + jugadores del equipo quedan con idEquipo=null |
+| E22 | ID inexistente | 404 |
+| E23 | Equipo con jugadores asignados (sin partidos) | 200 — ON DELETE SET NULL, jugadores persisten |
+| E24 | Equipo con partidos registrados | 409 `{"error":"No se puede eliminar el equipo: tiene N partido(s) asociado(s). Eliminá los partidos primero."}` |
+
+---
+
+## 6. Jugadores — /api/jugadores
+
+### GET /api/jugadores
+| ID | Descripción | Esperado |
+|----|-------------|----------|
+| J1 | Sin auth | 200 — array con equipo embebido |
+
+### GET /api/jugadores/:id
+| ID | :id | Esperado |
+|----|-----|----------|
+| J2 | ID existente | 200 + equipo embebido |
+| J3 | ID inexistente | 404 |
+| J4 | `abc`, `0`, `-1` | 404 |
+
+### POST /api/jugadores (requiere auth)
+| ID | Body | Esperado |
+|----|------|----------|
+| J5 | `{"nombre":"Juan","apellido":"Perez","categoria":"U20"}` | 201 — idEquipo null |
+| J6 | `{"nombre":"Juan","apellido":"Perez","categoria":"U20","idEquipo":1}` (equipo existe) | 201 |
+| J7 | `{"nombre":"Juan","apellido":"Perez","categoria":"U20","idEquipo":99999}` | 400 "equipo no existe" |
+| J8 | `{"nombre":"Juan","apellido":"Perez","categoria":"U20","idEquipo":null}` | 201 — null explícito permitido |
+| J9 | `{}` | 400 |
+| J10 | `{"nombre":"","apellido":"Perez","categoria":"U20"}` | 400 |
+| J11 | `{"nombre":"Juan","apellido":"Perez","categoria":"U20","idEquipo":"abc"}` | 400 — idEquipo debe ser int |
+| J12 | `{"nombre":"Juan","apellido":"Perez","categoria":"U20","idEquipo":1.5}` | 400 — debe ser int |
+
+### PUT /api/jugadores/:id (requiere auth)
+| ID | Body | Esperado |
+|----|------|----------|
+| J13 | `{"idEquipo":1}` (equipo existe) | 200 — reasignación |
+| J14 | `{"idEquipo":99999}` | 400 "equipo no existe" |
+| J15 | `{"idEquipo":null}` | 200 — desasignar equipo |
+| J16 | `{}` | 200 — sin cambios |
+| J17 | `{"nombre":""}` | 400 — min(1) aunque opcional |
+| J18 | PUT /api/jugadores/99999 | 404 |
+
+### DELETE /api/jugadores/:id (requiere auth)
+| ID | Descripción | Esperado |
+|----|-------------|----------|
+| J19 | ID existente | 200 |
+| J20 | ID inexistente | 404 |
+
+---
+
+## 7. Partidos — /api/partidos
+
+### GET /api/partidos
+| ID | Descripción | Esperado |
+|----|-------------|----------|
+| P1 | Sin auth | 200 — array con equipoLocal y equipoVisitante embebidos |
+
+### GET /api/partidos/:id
+| ID | :id | Esperado |
+|----|-----|----------|
+| P2 | ID existente | 200 + partido con equipoLocal y equipoVisitante |
+| P3 | ID inexistente (ej. 99999) | 404 |
+| P4 | `abc` | 404 o 500 |
+| P5 | `0`, `-1` | 404 |
+
+### POST /api/partidos (requiere auth)
+| ID | Body | Esperado |
+|----|------|----------|
+| P6 | `{"fecha":"2026-05-01","hora":"18:00","lugar":"Estadio X","idLocal":1,"idVisitante":2}` | 201 + partido con equipos |
+| P7 | `idLocal == idVisitante` | 400 "no puede jugar contra sí mismo" |
+| P8 | `idLocal` inexistente | 400 "equipo local no existe" |
+| P9 | `idVisitante` inexistente | 400 "equipo visitante no existe" |
+| P10 | `{}` (campos faltantes) | 400 Zod |
+| P11 | `{"fecha":"01/05/2026",...}` (formato incorrecto) | 400 Zod — regex YYYY-MM-DD |
+| P12 | `{"hora":"6pm",...}` (formato incorrecto) | 400 Zod — regex HH:MM |
+| P13 | Sin auth | 401 |
+
+### PUT /api/partidos/:id (requiere auth)
+| ID | Condición | Body | Esperado |
+|----|-----------|------|----------|
+| P14 | Partido sin resultado | `{"lugar":"Nuevo Estadio"}` | 200 |
+| P15 | Partido con resultado cargado | cualquier campo | 400 "con resultado cargado" |
+| P16 | ID inexistente | cualquier body | 404 |
+| P17 | Cambiar idLocal a equipo inexistente | `{"idLocal":99999}` | 400 |
+| P18 | Cambiar idLocal == idVisitante actual | `{"idLocal": <mismo id que visitante>}` | 400 |
+
+### DELETE /api/partidos/:id (requiere auth)
+| ID | Descripción | Esperado |
+|----|-------------|----------|
+| P19 | Partido sin resultado | 200 |
+| P20 | Partido con resultado cargado | 400 "con resultado cargado" |
+| P21 | ID inexistente | 404 |
 
 ---
 
@@ -131,15 +251,16 @@ Ver TEST_CASES.md casos J1–J21.
 
 | ID | Condición | Body | Esperado |
 |----|-----------|------|----------|
-| T-R1 | Local gana | `{"puntosLocal":85,"puntosVisitante":70}` | 200 + local: PG+1, PF+85, PC+70 / visitante: PP+1, PF+70, PC+85 |
-| T-R2 | Visitante gana | `{"puntosLocal":60,"puntosVisitante":75}` | 200 + local: PP+1 / visitante: PG+1 |
-| T-R3 | Empate | `{"puntosLocal":80,"puntosVisitante":80}` | 200 + ambos equipos: PE+1 |
-| T-R4 | Ya tiene resultado | cualquier body | 400 "resultado ya fue cargado" |
-| T-R5 | Partido inexistente | cualquier body | 404 |
-| T-R6 | Sin auth | cualquier body | 401 |
-| T-R7 | Puntaje negativo | `{"puntosLocal":-1,"puntosVisitante":70}` | 400 Zod |
+| R1 | Local gana | `{"puntosLocal":85,"puntosVisitante":70}` | 200 — local: PG+1, PF+85, PC+70 / visitante: PP+1, PF+70, PC+85 |
+| R2 | Visitante gana | `{"puntosLocal":60,"puntosVisitante":75}` | 200 — local: PP+1, PF+60, PC+75 / visitante: PG+1, PF+75, PC+60 |
+| R3 | Empate | `{"puntosLocal":80,"puntosVisitante":80}` | 200 — ambos: PE+1, PF+80, PC+80 |
+| R4 | Resultado ya cargado | cualquier body | 400 "El resultado de este partido ya fue cargado" |
+| R5 | Partido inexistente | cualquier body | 404 |
+| R6 | Sin auth | cualquier body | 401 |
+| R7 | Puntaje negativo | `{"puntosLocal":-1,"puntosVisitante":70}` | 400 Zod |
+| R8 | Puntaje no entero | `{"puntosLocal":1.5,"puntosVisitante":70}` | 400 Zod |
 
-**Verificación de stats (T-R1):** Después del request, hacer `GET /api/equipos/:id` del equipo local y verificar que `partidosGanados`, `puntosFavor`, `puntosEnContra` se incrementaron correctamente.
+**Verificación de stats (R1):** Después del request, `GET /api/equipos/:idLocal` y verificar `partidosGanados`, `puntosFavor`, `puntosEnContra` incrementados correctamente. Hacer lo mismo para el equipo visitante.
 
 ---
 
@@ -147,29 +268,48 @@ Ver TEST_CASES.md casos J1–J21.
 
 | ID | Descripción | Esperado |
 |----|-------------|----------|
-| T-C1 | Sin auth | 200 (endpoint público) |
-| T-C2 | Respuesta shape | Cada entry tiene: `posicion`, `nombre`, `puntos`, `PJ`, `PG`, `PE`, `PP`, `tantosFavor`, `tantosEnContra`, `diferencia` |
-| T-C3 | Ordenamiento por puntos | Equipo con más puntos primero |
-| T-C4 | Desempate por diferencia | Equipos con mismos puntos → mayor `diferencia` primero |
-| T-C5 | Desempate por tantos a favor | Mismo puntos y diferencia → mayor `tantosFavor` primero |
-| T-C6 | Sin equipos | 200 array vacío `[]` |
+| C1 | Sin auth | 200 (endpoint público) |
+| C2 | Con equipos sin partidos | 200 — todos con puntos=0, PJ=0, diferencia=0 |
+| C3 | Campos de respuesta | `posicion`, `idEquipo`, `nombre`, `puntos`, `PJ`, `PG`, `PE`, `PP`, `tantosFavor`, `tantosEnContra`, `diferencia` |
+| C4 | Orden por puntos | Equipo con más puntos en posición 1 |
+| C5 | Desempate: mismos puntos → mayor diferencia primero | A: 3pts +10dif, B: 3pts +5dif → A primero |
+| C6 | Desempate secundario: mismo puntos y diferencia → mayor tantosFavor primero | A: 3pts +5dif 85PF, B: 3pts +5dif 80PF → A primero |
+| C7 | Sin equipos en DB | 200 `[]` |
+| C8 | Fórmula: ganado=3pts, empatado=1pt, perdido=0pts | PG*3 + PE*1 |
 
-**Escenario de verificación de desempate:**
-1. Crear 3 equipos: A, B, C
-2. Cargar resultados: A gana a B (3pts, +10 diferencia), A gana a C (3pts, +5 diferencia), B gana a C
-3. Verificar: posición 1=A (6pts), posición 2=B (3pts), posición 3=C (0pts)
-4. Modificar para que A y B empaten en puntos → verificar que el de mayor diferencia queda primero
+**Escenario de verificación de desempate (C5):**
+1. Crear equipos A, B, C
+2. Cargar: A gana a B 90-80 (A: 3pts, dif+10), B gana a C 85-75 (B: 3pts, dif+10), A gana a C 80-70 (A: 6pts total)
+3. A (6pts) > B (3pts, dif+10) > C (0pts) — posiciones correctas
+4. Crear equipo D y cargar resultados para que empate en puntos con B pero con menor diferencia → B debe quedar antes que D
 
 ---
 
 ## 10. Casos Transversales y Seguridad
 
-Ver TEST_CASES.md casos X1–X12, V1–V6.
-
 | ID | Descripción | Esperado |
 |----|-------------|----------|
-| T-X1 | GET /api/rutainexistente | 404 Express |
-| T-X2 | POST /api/ligas (no definido) | 404 |
-| T-X3 | Body `null` en POST | 400 Zod |
-| T-X4 | Array en body: `[{"nombre":"x"}]` | 400 Zod |
-| T-X5 | JWT con `alg: "none"` | 403 (jsonwebtoken >= 9 rechaza) |
+| X1 | `GET /api/rutainexistente` | 404 Express |
+| X2 | `POST /api/ligas` (ruta no definida) | 404 |
+| X3 | `DELETE /api/ligas/:id` (no definido) | 404 |
+| X4 | Content-Type `text/plain` con JSON en body en ruta POST | 400 — `express.json()` no parsea, Zod falla |
+| X5 | Body con `__proto__`: `{"__proto__":{"admin":true}}` (prototype pollution) | 400 Zod — no altera Object.prototype |
+| X6 | ID con valor máximo de entero: `2147483647` | 404 sin error |
+| X7 | ID con valor mayor al máximo: `2147483648` | Puede ser 500 (INT overflow MySQL) |
+| X8 | Request sin Content-Type en POST | 400 — sin body parseado |
+| X9 | Array en body: `[{"nombre":"x"}]` | 400 — Zod espera objeto |
+| X10 | `null` como body completo | 400 |
+| X11 | Token JWT con `alg: "none"` (none attack) | 403 — jsonwebtoken >= 9 rechaza |
+| X12 | Header `Authorization: Bearer` sin token (string vacío) | 401 — jwt.verify falla |
+
+---
+
+## 11. Vulnerabilidades conocidas
+
+| ID | Descripción | Riesgo |
+|----|-------------|--------|
+| V1 | Sin rate limiting en `/api/auth/login` | Brute force de contraseñas |
+| V2 | Nombres de equipo/jugador sin unique constraint | Duplicados silenciosos |
+| V3 | IDs en params (`:id`) no validados como enteros | Input inesperado llega a Sequelize |
+| V4 | Sin límite de tamaño en campos STRING | Payloads grandes → error de DB sin 400 claro |
+| V5 | CORS abierto (`cors()` sin origin whitelist) | Cualquier dominio puede consumir la API |
