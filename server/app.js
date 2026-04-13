@@ -13,7 +13,14 @@ app.use(express.json());
 
 // Rutas
 const authRoutes = require('./routes/auth');
+const ligaRoutes = require('./routes/liga');
+const equipoRoutes = require('./routes/equipo');
+const jugadorRoutes = require('./routes/jugador');
+
 app.use('/api/auth', authRoutes);
+app.use('/api/ligas', ligaRoutes);
+app.use('/api/equipos', equipoRoutes);
+app.use('/api/jugadores', jugadorRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
