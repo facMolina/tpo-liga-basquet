@@ -7,8 +7,21 @@ const models = require('./models');
 
 const app = express();
 
-// Middlewares
-app.use(cors());
+// CORS
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',')
+  : ['http://localhost:5173', 'http://localhost:3000'];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, false);
+    }
+  },
+}));
+
 app.use(express.json());
 
 // Rutas
@@ -35,7 +48,7 @@ app.get('/api/health', (req, res) => {
 const PORT = process.env.PORT || 3000;
 
 sequelize
-  .sync({ alter: true })
+  .sync()
   .then(() => {
     console.log('Base de datos sincronizada correctamente.');
     app.listen(PORT, () => {

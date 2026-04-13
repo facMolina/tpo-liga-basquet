@@ -5,23 +5,23 @@ const { Partido, Equipo } = require('../models');
 const partidoCreateSchema = z.object({
   fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'Formato de fecha inválido (YYYY-MM-DD)' }),
   hora: z.string().regex(/^\d{2}:\d{2}$/, { message: 'Formato de hora inválido (HH:MM)' }),
-  lugar: z.string().min(1, { message: 'El lugar es requerido' }),
+  lugar: z.string().min(1, { message: 'El lugar es requerido' }).max(255),
   idLocal: z.number().int().positive({ message: 'idLocal debe ser un entero positivo' }),
   idVisitante: z.number().int().positive({ message: 'idVisitante debe ser un entero positivo' }),
-});
+}).strict();
 
 const partidoUpdateSchema = z.object({
   fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'Formato de fecha inválido (YYYY-MM-DD)' }).optional(),
   hora: z.string().regex(/^\d{2}:\d{2}$/, { message: 'Formato de hora inválido (HH:MM)' }).optional(),
-  lugar: z.string().min(1, { message: 'El lugar es requerido' }).optional(),
+  lugar: z.string().min(1, { message: 'El lugar es requerido' }).max(255).optional(),
   idLocal: z.number().int().positive({ message: 'idLocal debe ser un entero positivo' }).optional(),
   idVisitante: z.number().int().positive({ message: 'idVisitante debe ser un entero positivo' }).optional(),
-});
+}).strict();
 
 const resultadoSchema = z.object({
-  puntosLocal: z.number().int().min(0, { message: 'puntosLocal debe ser >= 0' }),
-  puntosVisitante: z.number().int().min(0, { message: 'puntosVisitante debe ser >= 0' }),
-});
+  puntosLocal: z.number().int().min(0, { message: 'puntosLocal debe ser >= 0' }).max(999),
+  puntosVisitante: z.number().int().min(0, { message: 'puntosVisitante debe ser >= 0' }).max(999),
+}).strict();
 
 const include = [
   { model: Equipo, as: 'equipoLocal', attributes: ['idEquipo', 'nombre'] },

@@ -144,7 +144,7 @@ Usar `POST /api/equipos` como ruta de prueba.
 | E15 | `{"nombre":"Nuevo"}` | 200 — actualización parcial |
 | E16 | `{}` | 200 — sin cambios |
 | E17 | `{"nombre":""}` | 400 — min(1) aunque opcional |
-| E18 | `{"partidosGanados":1}` | 400 — campo no existe en schema |
+| E18 | `{"partidosGanados":1}` | 400 — schema `.strict()` rechaza campos desconocidos |
 | E19 | PUT /api/equipos/99999 | 404 |
 | E20 | `{"idEquipo":999}` en body | Campo extra ignorado — no hay mass assignment |
 
@@ -304,12 +304,15 @@ Usar `POST /api/equipos` como ruta de prueba.
 
 ---
 
-## 11. Vulnerabilidades conocidas
+## 11. Controles de seguridad implementados
 
-| ID | Descripción | Riesgo |
-|----|-------------|--------|
-| V1 | Sin rate limiting en `/api/auth/login` | Brute force de contraseñas |
-| V2 | Nombres de equipo/jugador sin unique constraint | Duplicados silenciosos |
-| V3 | IDs en params (`:id`) no validados como enteros | Input inesperado llega a Sequelize |
-| V4 | Sin límite de tamaño en campos STRING | Payloads grandes → error de DB sin 400 claro |
-| V5 | CORS abierto (`cors()` sin origin whitelist) | Cualquier dominio puede consumir la API |
+| Control | Implementación |
+|---------|---------------|
+| Rate limiting en login | 20 intentos por IP cada 15 minutos → 429 con mensaje claro |
+| Nombre de equipo único | Verificación en controller antes de crear → 409 si ya existe |
+| Validación de IDs en params | Middleware `validateId` en todas las rutas con `:id` → 400 si no es entero positivo |
+| Límite de tamaño en strings | `.max()` en todos los schemas Zod (nombre: 255, password: 1000, etc.) |
+| CORS restringido | Whitelist de orígenes via `CORS_ORIGIN` env var (default: localhost:5173 y 3000) |
+| Schemas estrictos | `.strict()` en todos los schemas Zod → 400 si hay campos desconocidos |
+| Integridad referencial | `ON DELETE RESTRICT` en Partido FK → 409 si se intenta eliminar equipo con partidos |
+| Transacciones | `SELECT ... FOR UPDATE` en carga de resultados → sin race conditions |

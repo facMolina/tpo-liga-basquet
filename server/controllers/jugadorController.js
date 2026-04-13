@@ -2,18 +2,18 @@ const { z } = require('zod');
 const { Jugador, Equipo } = require('../models');
 
 const jugadorCreateSchema = z.object({
-  nombre: z.string().min(1, { message: 'El nombre es requerido' }),
-  apellido: z.string().min(1, { message: 'El apellido es requerido' }),
-  categoria: z.string().min(1, { message: 'La categoría es requerida' }),
-  idEquipo: z.number().int().nullable().optional(),
-});
+  nombre: z.string().min(1, { message: 'El nombre es requerido' }).max(255),
+  apellido: z.string().min(1, { message: 'El apellido es requerido' }).max(255),
+  categoria: z.string().min(1, { message: 'La categoría es requerida' }).max(100),
+  idEquipo: z.number().int().positive().nullable().optional(),
+}).strict();
 
 const jugadorUpdateSchema = z.object({
-  nombre: z.string().min(1, { message: 'El nombre es requerido' }).optional(),
-  apellido: z.string().min(1, { message: 'El apellido es requerido' }).optional(),
-  categoria: z.string().min(1, { message: 'La categoría es requerida' }).optional(),
-  idEquipo: z.number().int().nullable().optional(),
-});
+  nombre: z.string().min(1, { message: 'El nombre es requerido' }).max(255).optional(),
+  apellido: z.string().min(1, { message: 'El apellido es requerido' }).max(255).optional(),
+  categoria: z.string().min(1, { message: 'La categoría es requerida' }).max(100).optional(),
+  idEquipo: z.number().int().positive().nullable().optional(),
+}).strict();
 
 const getAll = async (req, res) => {
   try {
