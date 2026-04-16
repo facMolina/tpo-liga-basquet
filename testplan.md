@@ -52,10 +52,10 @@ Body: {"usuario":"admin","password":"adminpassword"}
 ### Ataques
 | ID | Descripción | Esperado |
 |----|-------------|----------|
-| A9 | Body con campo extra `"rol":"superadmin"` | 200 (campo ignorado por Zod — no hay elevación de privilegios) |
+| A9 | Body con campo extra `"rol":"superadmin"` | 400 — `loginSchema.strict()` rechaza campos no permitidos |
 | A10 | `{"usuario":{"$ne":""},"password":{"$ne":""}}` (NoSQL injection) | 400 — Zod rechaza no-string |
-| A11 | Password con 10.000 caracteres | No debe colgar el servidor |
-| A12 | 50 requests en < 1 segundo (brute force) | No hay rate limiting — **vulnerabilidad documentada** |
+| A11 | Password con 10.000 caracteres | 400 — `password.max(1000)` en Zod |
+| A12 | 50 requests en < 1 segundo (brute force) | 429 — rate limiting activo (20 intentos / 15 min) |
 | A13 | Content-Type omitido, body como form-urlencoded | 400 o 401 — sin JSON parser no llega data |
 
 ---
@@ -91,11 +91,11 @@ Usar `POST /api/equipos` como ruta de prueba.
 |----|-----|----------|
 | L2 | ID existente | 200 + objeto liga |
 | L3 | ID inexistente (ej. 99999) | 404 |
-| L4 | `abc` (no numérico) | 404 o 500 — Sequelize recibe NaN |
-| L5 | `0` | 404 |
-| L6 | `-1` | 404 |
-| L7 | `1.5` | Sin validación de entero — puede ser 404 |
-| L8 | `1; DROP TABLE ligas--` (SQL injection en path) | 404 o 500 — Sequelize usa prepared statements, no hay injection |
+| L4 | `abc` (no numérico) | 400 — `validateId` rechaza no-dígitos |
+| L5 | `0` | 400 — `validateId` rechaza id <= 0 |
+| L6 | `-1` | 400 — `validateId` rechaza id <= 0 |
+| L7 | `1.5` | 400 — `validateId` rechaza por regex `/^\d+$/` |
+| L8 | `1; DROP TABLE ligas--` (SQL injection en path) | 400 — `validateId` rechaza caracteres no numéricos |
 
 ### PUT /api/ligas/:id (requiere auth)
 | ID | Body | Esperado |
@@ -133,20 +133,20 @@ Usar `POST /api/equipos` como ruta de prueba.
 | E8 | `{"nombre":"","entrenador":"Juan"}` | 400 |
 | E9 | `{"nombre":"Boca","entrenador":""}` | 400 |
 | E10 | `{"nombre":"Boca"}` | 400 — falta entrenador |
-| E11 | `{"nombre":"A","entrenador":"B","partidosGanados":999}` | 201 — campo extra ignorado por createSchema, stats quedan en 0 |
-| E12 | Nombre con 255+ caracteres | 201 o 500 — sin límite en Zod, depende de config MySQL |
+| E11 | `{"nombre":"A","entrenador":"B","partidosGanados":999}` | 400 — `createSchema.strict()` rechaza campos no permitidos |
+| E12 | Nombre con 255+ caracteres | 400 — `nombre.max(255)` en Zod |
 | E13 | `{"nombre":"<script>alert(1)</script>","entrenador":"x"}` | 201 — almacena literal; XSS es responsabilidad del cliente |
-| E14 | Nombre duplicado (mismo nombre que equipo existente) | 201 — no hay unique constraint |
+| E14 | Nombre duplicado (mismo nombre que equipo existente) | 409 — controller valida nombre único |
 
 ### PUT /api/equipos/:id (requiere auth)
 | ID | Body | Esperado |
 |----|------|----------|
 | E15 | `{"nombre":"Nuevo"}` | 200 — actualización parcial |
-| E16 | `{}` | 200 — sin cambios |
+| E16 | `{}` | 400 — update rechaza body vacío |
 | E17 | `{"nombre":""}` | 400 — min(1) aunque opcional |
 | E18 | `{"partidosGanados":1}` | 400 — schema `.strict()` rechaza campos desconocidos |
 | E19 | PUT /api/equipos/99999 | 404 |
-| E20 | `{"idEquipo":999}` en body | Campo extra ignorado — no hay mass assignment |
+| E20 | `{"idEquipo":999}` en body | 400 — `strict()` rechaza campos no permitidos |
 
 ### DELETE /api/equipos/:id (requiere auth)
 | ID | Descripción | Esperado |
@@ -170,7 +170,7 @@ Usar `POST /api/equipos` como ruta de prueba.
 |----|-----|----------|
 | J2 | ID existente | 200 + equipo embebido |
 | J3 | ID inexistente | 404 |
-| J4 | `abc`, `0`, `-1` | 404 |
+| J4 | `abc`, `0`, `-1` | 400 — `validateId` rechaza no-dígitos e ids <= 0 |
 
 ### POST /api/jugadores (requiere auth)
 | ID | Body | Esperado |
@@ -190,7 +190,7 @@ Usar `POST /api/equipos` como ruta de prueba.
 | J13 | `{"idEquipo":1}` (equipo existe) | 200 — reasignación |
 | J14 | `{"idEquipo":99999}` | 400 "equipo no existe" |
 | J15 | `{"idEquipo":null}` | 200 — desasignar equipo |
-| J16 | `{}` | 200 — sin cambios |
+| J16 | `{}` | 400 — update rechaza body vacío |
 | J17 | `{"nombre":""}` | 400 — min(1) aunque opcional |
 | J18 | PUT /api/jugadores/99999 | 404 |
 
@@ -254,7 +254,7 @@ Usar `POST /api/equipos` como ruta de prueba.
 | R1 | Local gana | `{"puntosLocal":85,"puntosVisitante":70}` | 200 — local: PG+1, PF+85, PC+70 / visitante: PP+1, PF+70, PC+85 |
 | R2 | Visitante gana | `{"puntosLocal":60,"puntosVisitante":75}` | 200 — local: PP+1, PF+60, PC+75 / visitante: PG+1, PF+75, PC+60 |
 | R3 | Empate | `{"puntosLocal":80,"puntosVisitante":80}` | 200 — ambos: PE+1, PF+80, PC+80 |
-| R4 | Resultado ya cargado | cualquier body | 400 "El resultado de este partido ya fue cargado" |
+| R4 | Resultado ya cargado — re-carga con nuevo resultado | `{"puntosLocal":90,"puntosVisitante":60}` | 200 — stats anteriores revertidas, nuevas stats aplicadas; PJ no incrementa |
 | R5 | Partido inexistente | cualquier body | 404 |
 | R6 | Sin auth | cualquier body | 401 |
 | R7 | Puntaje negativo | `{"puntosLocal":-1,"puntosVisitante":70}` | 400 Zod |
@@ -290,8 +290,8 @@ Usar `POST /api/equipos` como ruta de prueba.
 | ID | Descripción | Esperado |
 |----|-------------|----------|
 | X1 | `GET /api/rutainexistente` | 404 Express |
-| X2 | `POST /api/ligas` (ruta no definida) | 404 |
-| X3 | `DELETE /api/ligas/:id` (no definido) | 404 |
+| X2 | `POST /api/ligas` sin auth | 401 — ruta definida, protegida por JWT |
+| X3 | `DELETE /api/ligas/abc` | 400 — `validateId` rechaza no-dígitos |
 | X4 | Content-Type `text/plain` con JSON en body en ruta POST | 400 — `express.json()` no parsea, Zod falla |
 | X5 | Body con `__proto__`: `{"__proto__":{"admin":true}}` (prototype pollution) | 400 Zod — no altera Object.prototype |
 | X6 | ID con valor máximo de entero: `2147483647` | 404 sin error |

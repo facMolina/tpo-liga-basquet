@@ -161,37 +161,70 @@ const cargarResultado = async (req, res) => {
   }
 
   const { puntosLocal, puntosVisitante } = validation.data;
-  const t = await sequelize.transaction();
+  let t;
 
   try {
+    t = await sequelize.transaction();
+
     const partido = await Partido.findByPk(req.params.id, { transaction: t, lock: t.LOCK.UPDATE });
     if (!partido) {
       await t.rollback();
+      t = null;
       return res.status(404).json({ error: 'Partido no encontrado' });
     }
 
+    const equipoLocal = await Equipo.findByPk(partido.idLocal, { transaction: t, lock: t.LOCK.UPDATE });
+    const equipoVisitante = await Equipo.findByPk(partido.idVisitante, { transaction: t, lock: t.LOCK.UPDATE });
+
+    let deltaLocalPJ = 1, deltaVisitantePJ = 1;
+
     if (partido.puntosLocal !== null) {
-      await t.rollback();
-      return res.status(400).json({ error: 'El resultado de este partido ya fue cargado' });
+      // Revertir stats del resultado anterior
+      deltaLocalPJ = 0;
+      deltaVisitantePJ = 0;
+      const oldLocalPG = partido.puntosLocal > partido.puntosVisitante ? 1 : 0;
+      const oldLocalPE = partido.puntosLocal === partido.puntosVisitante ? 1 : 0;
+      const oldLocalPP = partido.puntosLocal < partido.puntosVisitante ? 1 : 0;
+      const oldVisitantePG = partido.puntosVisitante > partido.puntosLocal ? 1 : 0;
+      const oldVisitantePE = oldLocalPE;
+      const oldVisitantePP = partido.puntosVisitante < partido.puntosLocal ? 1 : 0;
+
+      await equipoLocal.update({
+        partidosGanados: equipoLocal.partidosGanados - oldLocalPG,
+        partidosEmpatados: equipoLocal.partidosEmpatados - oldLocalPE,
+        partidosPerdidos: equipoLocal.partidosPerdidos - oldLocalPP,
+        puntosFavor: equipoLocal.puntosFavor - partido.puntosLocal,
+        puntosEnContra: equipoLocal.puntosEnContra - partido.puntosVisitante,
+        puntos: equipoLocal.puntos - (oldLocalPG * 3 + oldLocalPE),
+        diferencia: equipoLocal.diferencia - (partido.puntosLocal - partido.puntosVisitante),
+      }, { transaction: t });
+
+      await equipoVisitante.update({
+        partidosGanados: equipoVisitante.partidosGanados - oldVisitantePG,
+        partidosEmpatados: equipoVisitante.partidosEmpatados - oldVisitantePE,
+        partidosPerdidos: equipoVisitante.partidosPerdidos - oldVisitantePP,
+        puntosFavor: equipoVisitante.puntosFavor - partido.puntosVisitante,
+        puntosEnContra: equipoVisitante.puntosEnContra - partido.puntosLocal,
+        puntos: equipoVisitante.puntos - (oldVisitantePG * 3 + oldVisitantePE),
+        diferencia: equipoVisitante.diferencia - (partido.puntosVisitante - partido.puntosLocal),
+      }, { transaction: t });
+
+      // Recargar para tener valores actualizados
+      await equipoLocal.reload({ transaction: t });
+      await equipoVisitante.reload({ transaction: t });
     }
 
     await partido.update({ puntosLocal, puntosVisitante }, { transaction: t });
-
-    const equipoLocal = await Equipo.findByPk(partido.idLocal, { transaction: t, lock: t.LOCK.UPDATE });
-    const equipoVisitante = await Equipo.findByPk(partido.idVisitante, { transaction: t, lock: t.LOCK.UPDATE });
 
     let localPG = 0, localPE = 0, localPP = 0;
     let visitantePG = 0, visitantePE = 0, visitantePP = 0;
 
     if (puntosLocal > puntosVisitante) {
-      localPG = 1;
-      visitantePP = 1;
+      localPG = 1; visitantePP = 1;
     } else if (puntosLocal < puntosVisitante) {
-      localPP = 1;
-      visitantePG = 1;
+      localPP = 1; visitantePG = 1;
     } else {
-      localPE = 1;
-      visitantePE = 1;
+      localPE = 1; visitantePE = 1;
     }
 
     await equipoLocal.update({
@@ -200,6 +233,9 @@ const cargarResultado = async (req, res) => {
       partidosPerdidos: equipoLocal.partidosPerdidos + localPP,
       puntosFavor: equipoLocal.puntosFavor + puntosLocal,
       puntosEnContra: equipoLocal.puntosEnContra + puntosVisitante,
+      partidosJugados: equipoLocal.partidosJugados + deltaLocalPJ,
+      puntos: equipoLocal.puntos + (localPG * 3 + localPE),
+      diferencia: equipoLocal.diferencia + (puntosLocal - puntosVisitante),
     }, { transaction: t });
 
     await equipoVisitante.update({
@@ -208,28 +244,32 @@ const cargarResultado = async (req, res) => {
       partidosPerdidos: equipoVisitante.partidosPerdidos + visitantePP,
       puntosFavor: equipoVisitante.puntosFavor + puntosVisitante,
       puntosEnContra: equipoVisitante.puntosEnContra + puntosLocal,
+      partidosJugados: equipoVisitante.partidosJugados + deltaVisitantePJ,
+      puntos: equipoVisitante.puntos + (visitantePG * 3 + visitantePE),
+      diferencia: equipoVisitante.diferencia + (puntosVisitante - puntosLocal),
     }, { transaction: t });
 
     await t.commit();
+    t = null;
 
     const partidoFinal = await Partido.findByPk(partido.idPartido, {
       include: [
         {
           model: Equipo,
           as: 'equipoLocal',
-          attributes: ['idEquipo', 'nombre', 'partidosGanados', 'partidosEmpatados', 'partidosPerdidos', 'puntosFavor', 'puntosEnContra'],
+          attributes: ['idEquipo', 'nombre', 'partidosGanados', 'partidosEmpatados', 'partidosPerdidos', 'puntosFavor', 'puntosEnContra', 'puntos', 'partidosJugados', 'diferencia'],
         },
         {
           model: Equipo,
           as: 'equipoVisitante',
-          attributes: ['idEquipo', 'nombre', 'partidosGanados', 'partidosEmpatados', 'partidosPerdidos', 'puntosFavor', 'puntosEnContra'],
+          attributes: ['idEquipo', 'nombre', 'partidosGanados', 'partidosEmpatados', 'partidosPerdidos', 'puntosFavor', 'puntosEnContra', 'puntos', 'partidosJugados', 'diferencia'],
         },
       ],
     });
 
     res.json(partidoFinal);
   } catch (error) {
-    await t.rollback();
+    if (t) await t.rollback();
     console.error('Error al cargar resultado:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
   }

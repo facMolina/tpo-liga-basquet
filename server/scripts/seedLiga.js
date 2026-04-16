@@ -7,7 +7,8 @@ async function seedLiga() {
     console.log('Conexión establecida para el seed.');
     await sequelize.sync();
 
-    const existing = await Liga.findOne({ where: { nombre: 'Liga de Basquet Juvenil' } });
+    const nombre = process.env.LIGA_NAME || 'Liga de Basquet Juvenil';
+    const existing = await Liga.findOne({ where: { nombre } });
     if (existing) {
       console.log('La liga ya existe.');
       await sequelize.close();
@@ -16,7 +17,7 @@ async function seedLiga() {
     }
 
     await Liga.create({
-      nombre: process.env.LIGA_NAME || 'Liga de Basquet Juvenil',
+      nombre,
       temporada: process.env.LIGA_TEMPORADA || '1C 2026',
       descripcion: process.env.LIGA_DESCRIPCION || 'Liga oficial TPO',
     });
