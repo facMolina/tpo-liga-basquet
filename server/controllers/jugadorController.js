@@ -6,14 +6,14 @@ const jugadorCreateSchema = z.object({
   apellido: z.string().min(1, { message: 'El apellido es requerido' }),
   categoria: z.string().min(1, { message: 'La categoría es requerida' }),
   idEquipo: z.number().int().nullable().optional(),
-});
+}).strict();
 
 const jugadorUpdateSchema = z.object({
   nombre: z.string().min(1, { message: 'El nombre es requerido' }).optional(),
   apellido: z.string().min(1, { message: 'El apellido es requerido' }).optional(),
   categoria: z.string().min(1, { message: 'La categoría es requerida' }).optional(),
   idEquipo: z.number().int().nullable().optional(),
-});
+}).strict();
 
 const getAll = async (req, res) => {
   try {
@@ -70,6 +70,10 @@ const update = async (req, res) => {
   const validation = jugadorUpdateSchema.safeParse(req.body);
   if (!validation.success) {
     return res.status(400).json({ errors: validation.error.errors });
+  }
+
+  if (Object.keys(validation.data).length === 0) {
+    return res.status(400).json({ error: 'Debe proporcionar al menos un campo para actualizar' });
   }
 
   try {

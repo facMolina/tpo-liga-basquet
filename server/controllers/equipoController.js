@@ -5,12 +5,12 @@ const { Equipo, Jugador, Partido } = require('../models');
 const equipoCreateSchema = z.object({
   nombre: z.string().min(1, { message: 'El nombre es requerido' }),
   entrenador: z.string().min(1, { message: 'El entrenador es requerido' }),
-});
+}).strict();
 
 const equipoUpdateSchema = z.object({
   nombre: z.string().min(1, { message: 'El nombre es requerido' }).optional(),
   entrenador: z.string().min(1, { message: 'El entrenador es requerido' }).optional(),
-});
+}).strict();
 
 const getAll = async (req, res) => {
   try {
@@ -70,6 +70,10 @@ const update = async (req, res) => {
     return res.status(400).json({ errors: validation.error.errors });
   }
 
+  if (Object.keys(validation.data).length === 0) {
+    return res.status(400).json({ error: 'Debe proporcionar al menos un campo para actualizar' });
+  }
+
   try {
     const equipo = await Equipo.findByPk(req.params.id);
     if (!equipo) {
@@ -97,8 +101,15 @@ const destroy = async (req, res) => {
         error: `No se puede eliminar el equipo: tiene ${totalPartidos} partido(s) asociado(s). Eliminá los partidos primero.`,
       });
     }
-    await Jugador.update({ idEquipo: null }, { where: { idEquipo: req.params.id } });
-    await equipo.destroy();
+    const t = await Equipo.sequelize.transaction();
+    try {
+      await Jugador.update({ idEquipo: null }, { where: { idEquipo: req.params.id }, transaction: t });
+      await equipo.destroy({ transaction: t });
+      await t.commit();
+    } catch (txError) {
+      await t.rollback();
+      throw txError;
+    }
     res.json({ message: 'Equipo eliminado correctamente' });
   } catch (error) {
     console.error('Error al eliminar equipo:', error);
