@@ -138,7 +138,9 @@ El backend sigue una arquitectura MVC estricta: `models/` define las entidades y
 |--------|------|------|-------------|
 | GET | `/api/ligas` | No | Listar todas las ligas |
 | GET | `/api/ligas/:id` | No | Obtener liga por ID |
+| POST | `/api/ligas` | Sí | Crear liga |
 | PUT | `/api/ligas/:id` | Sí | Actualizar liga |
+| DELETE | `/api/ligas/:id` | Sí | Eliminar liga |
 
 ### Equipos
 
