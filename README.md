@@ -87,9 +87,11 @@ DB_PASSWORD=
 DB_NAME=liga_basquet
 DB_PORT=3306
 JWT_SECRET=tu_secreto_jwt_super_seguro
+ADMIN_USER=admin
+ADMIN_PASSWORD=adminpassword
 ```
 
-> **Nota:** Si configuraste una contraseña para el usuario root de MySQL, completala en `DB_PASSWORD`.
+> **Nota:** Si configuraste una contraseña para el usuario root de MySQL durante la instalacion, completala en `DB_PASSWORD`. Si no configuraste una (instalacion por defecto), dejala vacia.
 
 ---
 
@@ -301,6 +303,126 @@ node scripts/seedAdmin.js
 
 ---
 
+## API Endpoints
+
+### Autenticacion
+
+| Metodo | Ruta | Auth | Descripcion |
+|--------|------|------|-------------|
+| POST | `/api/auth/login` | No | Login. Devuelve token JWT |
+| GET | `/api/auth/me` | Si | Verifica token y devuelve datos del usuario |
+
+### Liga
+
+| Metodo | Ruta | Auth | Descripcion |
+|--------|------|------|-------------|
+| GET | `/api/ligas` | No | Listar todas las ligas |
+| GET | `/api/ligas/:id` | No | Obtener liga por ID |
+| POST | `/api/ligas` | Si | Crear liga |
+| PUT | `/api/ligas/:id` | Si | Actualizar liga |
+| DELETE | `/api/ligas/:id` | Si | Eliminar liga |
+
+### Equipos
+
+| Metodo | Ruta | Auth | Descripcion |
+|--------|------|------|-------------|
+| GET | `/api/equipos` | No | Listar todos los equipos |
+| GET | `/api/equipos/:id` | No | Vista detallada: equipo con jugadores y partidos |
+| POST | `/api/equipos` | Si | Crear equipo |
+| PUT | `/api/equipos/:id` | Si | Actualizar equipo |
+| DELETE | `/api/equipos/:id` | Si | Eliminar equipo (jugadores pasan a sin equipo) |
+
+### Jugadores
+
+| Metodo | Ruta | Auth | Descripcion |
+|--------|------|------|-------------|
+| GET | `/api/jugadores` | No | Listar todos los jugadores |
+| GET | `/api/jugadores/:id` | No | Obtener jugador por ID |
+| POST | `/api/jugadores` | Si | Crear jugador |
+| PUT | `/api/jugadores/:id` | Si | Actualizar jugador |
+| DELETE | `/api/jugadores/:id` | Si | Eliminar jugador |
+
+---
+
+## Como probar la API localmente
+
+Podes usar **Thunder Client** (extension de VS Code), **Postman** o **curl** desde la terminal.
+
+### 1. Verificar que el servidor esta corriendo
+
+```bash
+curl http://localhost:3000/api/health
+# Respuesta esperada: {"status":"OK","message":"Backend funcionando correctamente"}
+```
+
+### 2. Login y obtencion del token
+
+```bash
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"usuario":"admin","password":"adminpassword"}'
+```
+
+Respuesta:
+```json
+{
+  "message": "Login exitoso",
+  "token": "<JWT_TOKEN>",
+  "usuario": { "idUsuario": 1, "usuario": "admin" }
+}
+```
+
+Copiá el valor de `token` para usarlo en las siguientes requests.
+
+### 3. Crear un equipo (requiere token)
+
+```bash
+curl -X POST http://localhost:3000/api/equipos \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <JWT_TOKEN>" \
+  -d '{"nombre":"Tigres","entrenador":"Juan Perez"}'
+# Respuesta: 201 con el equipo creado
+```
+
+### 4. Ver equipo con jugadores y partidos
+
+```bash
+curl http://localhost:3000/api/equipos/1
+# Respuesta: equipo con arrays "Jugadors", "partidosLocal" y "partidosVisitante"
+```
+
+### 5. Crear un jugador y asignarlo a un equipo
+
+```bash
+curl -X POST http://localhost:3000/api/jugadores \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <JWT_TOKEN>" \
+  -d '{"nombre":"Lucas","apellido":"Gomez","categoria":"Sub-20","idEquipo":1}'
+# Respuesta: 201 con el jugador creado
+```
+
+### 6. Eliminar un equipo (los jugadores quedan sin equipo, no se borran)
+
+```bash
+curl -X DELETE http://localhost:3000/api/equipos/1 \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+# Respuesta: {"message":"Equipo eliminado correctamente"}
+# Verificar: GET /api/jugadores → idEquipo del jugador pasa a null
+```
+
+### Comportamiento esperado ante errores
+
+| Situacion | Codigo | Respuesta |
+|-----------|--------|-----------|
+| Ruta protegida sin token | 401 | `{"error":"Autenticación requerida"}` |
+| Token invalido o expirado | 403 | `{"error":"Token inválido o expirado"}` |
+| Header mal formado (no Bearer) | 401 | `{"error":"Formato de autorización inválido. Use Bearer <token>"}` |
+| Recurso no encontrado | 404 | `{"error":"... no encontrado"}` |
+| Body invalido o campos faltantes | 400 | `{"errors":[...]}` |
+| idEquipo inexistente en jugador | 400 | `{"error":"El equipo especificado no existe"}` |
+
+---
+
 ## Scripts de Ejecucion
 
 ### Frontend (localhost:5173)
@@ -363,9 +485,15 @@ tpo-liga-basquet/
 │   │   ├── Jugador.js
 │   │   └── Partido.js
 │   ├── controllers/          # Logica de negocio
-│   │   └── authController.js # Login con validacion Zod + JWT
+│   │   ├── authController.js # Login con validacion Zod + JWT
+│   │   ├── ligaController.js # CRUD Liga
+│   │   ├── equipoController.js # CRUD Equipo + Vista Detallada
+│   │   └── jugadorController.js # CRUD Jugador
 │   ├── routes/               # Rutas API
-│   │   └── auth.js           # POST /api/auth/login | GET /api/auth/me
+│   │   ├── auth.js           # POST /api/auth/login | GET /api/auth/me
+│   │   ├── liga.js           # CRUD /api/ligas
+│   │   ├── equipo.js         # CRUD /api/equipos
+│   │   └── jugador.js        # CRUD /api/jugadores
 │   ├── middleware/           # Middlewares
 │   │   └── auth.js           # authenticateJWT — protege rutas privadas
 │   ├── scripts/
