@@ -318,7 +318,9 @@ node scripts/seedAdmin.js
 |--------|------|------|-------------|
 | GET | `/api/ligas` | No | Listar todas las ligas |
 | GET | `/api/ligas/:id` | No | Obtener liga por ID |
+| POST | `/api/ligas` | Si | Crear liga |
 | PUT | `/api/ligas/:id` | Si | Actualizar liga |
+| DELETE | `/api/ligas/:id` | Si | Eliminar liga |
 
 ### Equipos
 
@@ -489,7 +491,7 @@ tpo-liga-basquet/
 │   │   └── jugadorController.js # CRUD Jugador
 │   ├── routes/               # Rutas API
 │   │   ├── auth.js           # POST /api/auth/login | GET /api/auth/me
-│   │   ├── liga.js           # GET /api/ligas | PUT /api/ligas/:id
+│   │   ├── liga.js           # CRUD /api/ligas
 │   │   ├── equipo.js         # CRUD /api/equipos
 │   │   └── jugador.js        # CRUD /api/jugadores
 │   ├── middleware/           # Middlewares
