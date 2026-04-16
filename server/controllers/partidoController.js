@@ -91,6 +91,10 @@ const update = async (req, res) => {
     return res.status(400).json({ errors: validation.error.errors });
   }
 
+  if (Object.keys(validation.data).length === 0) {
+    return res.status(400).json({ error: 'Debe proporcionar al menos un campo para actualizar' });
+  }
+
   try {
     const partido = await Partido.findByPk(req.params.id);
     if (!partido) {

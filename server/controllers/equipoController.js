@@ -83,6 +83,14 @@ const update = async (req, res) => {
     if (!equipo) {
       return res.status(404).json({ error: 'Equipo no encontrado' });
     }
+    if (validation.data.nombre) {
+      const duplicado = await Equipo.findOne({
+        where: { nombre: validation.data.nombre, idEquipo: { [Op.ne]: equipo.idEquipo } },
+      });
+      if (duplicado) {
+        return res.status(409).json({ error: 'Ya existe un equipo con ese nombre' });
+      }
+    }
     await equipo.update(validation.data);
     res.json(equipo);
   } catch (error) {
