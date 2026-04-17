@@ -83,6 +83,9 @@ El backend sigue una arquitectura MVC estricta: `models/` define las entidades y
 | partidosPerdidos | INTEGER | Default 0 |
 | puntosFavor | INTEGER | Default 0 |
 | puntosEnContra | INTEGER | Default 0 |
+| partidosJugados | INTEGER | Default 0 |
+| puntos | INTEGER | Default 0 |
+| diferencia | INTEGER | Default 0 |
 
 #### Jugador
 | Campo | Tipo | Restricciones |
@@ -355,7 +358,7 @@ GET http://localhost:3000/api/clasificacion
 | Nombre de equipo duplicado | 409 | `{"error":"Ya existe un equipo con ese nombre"}` |
 | Equipo con partidos asociados (DELETE) | 409 | `{"error":"No se puede eliminar el equipo: tiene N partido(s) asociado(s)"}` |
 | Partido con resultado ya cargado (PUT/DELETE) | 400 | `{"error":"No se puede modificar/eliminar un partido con resultado cargado"}` |
-| Resultado ya cargado (POST resultado) | 400 | `{"error":"El resultado de este partido ya fue cargado"}` |
+| Re-carga de resultado (POST resultado con resultado previo) | 200 | Stats anteriores revertidas y nuevas aplicadas atómicamente |
 | Local = Visitante en partido | 400 | `{"error":"Un equipo no puede jugar contra sí mismo"}` |
 
 ---
