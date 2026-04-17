@@ -2,11 +2,18 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
 const authenticateJWT = require('../middleware/auth');
+const rateLimit = require('express-rate-limit');
 
-// POST /api/auth/login
-router.post('/login', authController.login);
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiados intentos de login. Intentá de nuevo en 15 minutos.' },
+});
 
-// GET /api/auth/me — Ruta protegida: verifica token y retorna datos del usuario
+router.post('/login', loginLimiter, authController.login);
+
 router.get('/me', authenticateJWT, (req, res) => {
   res.json({ message: 'Token válido', usuario: req.user });
 });

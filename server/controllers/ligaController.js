@@ -2,15 +2,15 @@ const { z } = require('zod');
 const { Liga } = require('../models');
 
 const ligaCreateSchema = z.object({
-  nombre: z.string().min(1, { message: 'El nombre es requerido' }),
-  temporada: z.string().min(1, { message: 'La temporada es requerida' }),
-  descripcion: z.string().nullable().optional(),
+  nombre: z.string().min(1, { message: 'El nombre es requerido' }).max(255),
+  temporada: z.string().min(1, { message: 'La temporada es requerida' }).max(100),
+  descripcion: z.string().max(1000).nullable().optional(),
 }).strict();
 
 const ligaUpdateSchema = z.object({
-  nombre: z.string().min(1, { message: 'El nombre es requerido' }),
-  temporada: z.string().min(1, { message: 'La temporada es requerida' }),
-  descripcion: z.string().nullable().optional(),
+  nombre: z.string().min(1, { message: 'El nombre es requerido' }).max(255),
+  temporada: z.string().min(1, { message: 'La temporada es requerida' }).max(100),
+  descripcion: z.string().max(1000).nullable().optional(),
 }).strict();
 
 const getAll = async (req, res) => {

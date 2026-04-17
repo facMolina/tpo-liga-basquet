@@ -3,13 +3,13 @@ const { Op } = require('sequelize');
 const { Equipo, Jugador, Partido } = require('../models');
 
 const equipoCreateSchema = z.object({
-  nombre: z.string().min(1, { message: 'El nombre es requerido' }),
-  entrenador: z.string().min(1, { message: 'El entrenador es requerido' }),
+  nombre: z.string().min(1, { message: 'El nombre es requerido' }).max(255),
+  entrenador: z.string().min(1, { message: 'El entrenador es requerido' }).max(255),
 }).strict();
 
 const equipoUpdateSchema = z.object({
-  nombre: z.string().min(1, { message: 'El nombre es requerido' }).optional(),
-  entrenador: z.string().min(1, { message: 'El entrenador es requerido' }).optional(),
+  nombre: z.string().min(1, { message: 'El nombre es requerido' }).max(255).optional(),
+  entrenador: z.string().min(1, { message: 'El entrenador es requerido' }).max(255).optional(),
 }).strict();
 
 const getAll = async (req, res) => {
@@ -56,6 +56,10 @@ const create = async (req, res) => {
   }
 
   try {
+    const existe = await Equipo.findOne({ where: { nombre: validation.data.nombre } });
+    if (existe) {
+      return res.status(409).json({ error: 'Ya existe un equipo con ese nombre' });
+    }
     const equipo = await Equipo.create(validation.data);
     res.status(201).json(equipo);
   } catch (error) {
@@ -78,6 +82,14 @@ const update = async (req, res) => {
     const equipo = await Equipo.findByPk(req.params.id);
     if (!equipo) {
       return res.status(404).json({ error: 'Equipo no encontrado' });
+    }
+    if (validation.data.nombre) {
+      const duplicado = await Equipo.findOne({
+        where: { nombre: validation.data.nombre, idEquipo: { [Op.ne]: equipo.idEquipo } },
+      });
+      if (duplicado) {
+        return res.status(409).json({ error: 'Ya existe un equipo con ese nombre' });
+      }
     }
     await equipo.update(validation.data);
     res.json(equipo);

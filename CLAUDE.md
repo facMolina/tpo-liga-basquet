@@ -25,10 +25,10 @@ Monorepo con dos proyectos independientes:
 - Los modelos se definen como factory functions: `module.exports = (sequelize) => sequelize.define(...)`
 
 ### Motor de partidos y clasificación
-- `POST /api/partidos/:id/resultado` — carga resultado con `SELECT ... FOR UPDATE` (transacción + row-level lock para evitar condiciones de carrera)
-- Al cargar resultado, actualiza automáticamente los contadores del `Equipo` (PG, PE, PP, puntosFavor, puntosEnContra)
-- `GET /api/clasificacion` — calcula en runtime: puntos = PG×3 + PE×1; ordena por puntos → diferencia → tantosFavor
-- Un partido con resultado ya cargado (`puntosLocal !== null`) no puede modificarse ni eliminarse
+- `POST /api/partidos/:id/resultado` — carga o re-carga resultado con `SELECT ... FOR UPDATE` (transacción + row-level lock). Si ya tiene resultado, revierte atómicamente las stats anteriores antes de aplicar las nuevas; `partidosJugados` no se incrementa en re-carga.
+- Al cargar resultado, actualiza automáticamente los contadores del `Equipo` (PG, PE, PP, puntosFavor, puntosEnContra, puntos, partidosJugados, diferencia)
+- `GET /api/clasificacion` — lee valores pre-calculados del modelo `Equipo` con `ORDER BY puntos DESC, diferencia DESC, puntosFavor DESC` (sin cálculos en memoria)
+- Un partido con resultado (`puntosLocal !== null`) no puede modificarse (PUT) ni eliminarse (DELETE), pero sí permite re-carga de resultado
 
 ### Schemas Zod
 - Todos los schemas usan `.strict()` para rechazar campos no declarados (400)

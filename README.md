@@ -1,82 +1,269 @@
-# TPO - Sistema de Gestion Liga de Basquet
+# Sistema de Gestión de Liga de Básquet
 
-Sistema integral para la gestion de equipos, jugadores y estadisticas de una liga de basquet, construido con una arquitectura moderna de Monorepo.
+Aplicación web para la gestión integral de una liga de básquet juvenil. Permite administrar equipos, jugadores y partidos, cargar resultados con actualización automática de estadísticas, y visualizar la tabla de clasificación en tiempo real.
 
 ---
 
 ## Tabla de Contenidos
 
-- [Caracteristicas](#caracteristicas)
-- [Requisitos Previos](#requisitos-previos)
-- [Instalacion](#instalacion)
-- [Configuracion de GitHub CLI](#configuracion-de-github-cli)
-- [Configuracion de MySQL Local](#configuracion-de-mysql-local)
-- [Scripts de Ejecucion](#scripts-de-ejecucion)
-- [Estructura de Carpetas](#estructura-de-carpetas)
-- [Modelo de Base de Datos](#modelo-de-base-de-datos)
-- [Tecnologias Utilizadas](#tecnologias-utilizadas)
+- [Arquitectura técnica](#arquitectura-técnica)
+- [Modelo de datos](#modelo-de-datos)
+- [API Reference](#api-reference)
+- [Seguridad](#seguridad)
+- [Instalación](#instalación)
+- [Configuración del entorno](#configuración-del-entorno)
+- [Cómo probar con Thunder Client](#cómo-probar-con-thunder-client)
+- [Comportamiento ante errores](#comportamiento-ante-errores)
+- [Plan de Pruebas](#plan-de-pruebas)
 
 ---
 
-## Caracteristicas
+## Arquitectura técnica
 
-- **Frontend Moderno**: Interfaz responsive construida con React y Vite
-- **Backend Robusto**: API REST con Express y Sequelize (arquitectura MVC)
-- **Base de Datos**: MySQL con ORM Sequelize y sincronizacion automatica de tablas
-- **Seguridad**: [x] Autenticacion con JWT y cifrado con Bcrypt
-- **Validaciones**: Esquemas validados con Zod
-- **Estilos**: Diseño con Tailwind CSS
+### Stack
+
+| Capa | Tecnología | Versión |
+|------|-----------|---------|
+| Runtime | Node.js | 16+ |
+| Framework web | Express | 5.2+ |
+| ORM | Sequelize | 6.37+ |
+| Base de datos | MySQL | 8.0+ |
+| Autenticación | JWT (jsonwebtoken) | 9.0+ |
+| Cifrado | bcryptjs | 3.0+ |
+| Validación | Zod | 3.23+ |
+| Frontend | React + Vite + Tailwind CSS | 18 / 5 / 4 |
+
+### Estructura del proyecto
+
+```
+tpo-liga-basquet/
+├── client/                    # Frontend React + Vite
+│   └── src/
+├── server/                    # Backend Express (MVC)
+│   ├── config/database.js     # Conexión Sequelize
+│   ├── models/                # Modelos Sequelize + relaciones
+│   ├── controllers/           # Lógica de negocio + validación Zod
+│   ├── routes/                # Definición de rutas
+│   ├── middleware/auth.js     # Middleware JWT
+│   └── scripts/               # Seeds de datos iniciales
+└── testplan.md                # Plan de pruebas de regresión
+```
+
+El backend sigue una arquitectura MVC estricta: `models/` define las entidades y relaciones, `controllers/` contiene la lógica de negocio y validación con Zod, `routes/` expone los endpoints. La autenticación se aplica como middleware en las rutas que lo requieren.
 
 ---
 
-## Requisitos Previos
+## Modelo de datos
 
-Antes de comenzar, asegurate de tener instalados:
+### Tablas
 
-- **Node.js** (v16 o superior) → [Descargar](https://nodejs.org/)
-- **npm** (incluido con Node.js)
-- **MySQL** (v8.0 o superior)
-- **GitHub CLI (`gh`)** (para pushear, crear PRs y gestionar el repo)
-- **Homebrew** (solo macOS, para instalar MySQL y gh facilmente)
+#### Liga
+| Campo | Tipo | Restricciones |
+|-------|------|---------------|
+| idLiga | INTEGER | PK, auto-incremental |
+| nombre | STRING | NOT NULL |
+| temporada | STRING | NOT NULL |
+| descripcion | TEXT | Permite NULL |
 
-Verifica las versiones instaladas:
+#### Usuario
+| Campo | Tipo | Restricciones |
+|-------|------|---------------|
+| idUsuario | INTEGER | PK, auto-incremental |
+| usuario | STRING | NOT NULL, UNIQUE |
+| password_hash | STRING | NOT NULL |
 
-```bash
-node --version
-npm --version
-mysql --version
+#### Equipo
+| Campo | Tipo | Restricciones |
+|-------|------|---------------|
+| idEquipo | INTEGER | PK, auto-incremental |
+| nombre | STRING | NOT NULL |
+| entrenador | STRING | NOT NULL |
+| partidosGanados | INTEGER | Default 0 |
+| partidosEmpatados | INTEGER | Default 0 |
+| partidosPerdidos | INTEGER | Default 0 |
+| puntosFavor | INTEGER | Default 0 |
+| puntosEnContra | INTEGER | Default 0 |
+| partidosJugados | INTEGER | Default 0 |
+| puntos | INTEGER | Default 0 |
+| diferencia | INTEGER | Default 0 |
+
+#### Jugador
+| Campo | Tipo | Restricciones |
+|-------|------|---------------|
+| idJugador | INTEGER | PK, auto-incremental |
+| nombre | STRING | NOT NULL |
+| apellido | STRING | NOT NULL |
+| categoria | STRING | NOT NULL |
+| idEquipo | INTEGER | FK → Equipo, Permite NULL, ON DELETE SET NULL |
+
+#### Partido
+| Campo | Tipo | Restricciones |
+|-------|------|---------------|
+| idPartido | INTEGER | PK, auto-incremental |
+| fecha | DATEONLY | NOT NULL |
+| hora | TIME | NOT NULL |
+| lugar | STRING | NOT NULL |
+| puntosLocal | INTEGER | Permite NULL (null = pendiente) |
+| puntosVisitante | INTEGER | Permite NULL (null = pendiente) |
+| idLocal | INTEGER | FK → Equipo, NOT NULL, ON DELETE RESTRICT |
+| idVisitante | INTEGER | FK → Equipo, NOT NULL, ON DELETE RESTRICT |
+
+### Relaciones
+
+- **Equipo 1:N Jugador** — Si se elimina el equipo, `idEquipo` del jugador se setea en NULL.
+- **Equipo 1:N Partido (Local)** — FK `idLocal`, alias `partidosLocal`. RESTRICT: no se puede eliminar un equipo con partidos asociados.
+- **Equipo 1:N Partido (Visitante)** — FK `idVisitante`, alias `partidosVisitante`. RESTRICT.
+
+### Reglas de puntuación
+
+| Resultado | Puntos |
+|-----------|--------|
+| Partido ganado | 3 |
+| Partido empatado | 1 |
+| Partido perdido | 0 |
+
+**Desempate en la clasificación:** 1) Mayor diferencia de tantos (PF − PC). 2) Mayor cantidad de tantos a favor.
+
+---
+
+## API Reference
+
+### Autenticación
+
+| Método | Ruta | Auth | Descripción |
+|--------|------|------|-------------|
+| POST | `/api/auth/login` | No | Login. Devuelve token JWT (12h) |
+| GET | `/api/auth/me` | Sí | Verifica token y devuelve datos del usuario |
+
+### Liga
+
+| Método | Ruta | Auth | Descripción |
+|--------|------|------|-------------|
+| GET | `/api/ligas` | No | Listar todas las ligas |
+| GET | `/api/ligas/:id` | No | Obtener liga por ID |
+| POST | `/api/ligas` | Sí | Crear liga |
+| PUT | `/api/ligas/:id` | Sí | Actualizar liga |
+| DELETE | `/api/ligas/:id` | Sí | Eliminar liga |
+
+### Equipos
+
+| Método | Ruta | Auth | Descripción |
+|--------|------|------|-------------|
+| GET | `/api/equipos` | No | Listar todos los equipos |
+| GET | `/api/equipos/:id` | No | Vista detallada: equipo con jugadores y partidos |
+| POST | `/api/equipos` | Sí | Crear equipo |
+| PUT | `/api/equipos/:id` | Sí | Actualizar nombre/entrenador |
+| DELETE | `/api/equipos/:id` | Sí | Eliminar equipo (falla si tiene partidos) |
+
+### Jugadores
+
+| Método | Ruta | Auth | Descripción |
+|--------|------|------|-------------|
+| GET | `/api/jugadores` | No | Listar todos los jugadores |
+| GET | `/api/jugadores/:id` | No | Obtener jugador por ID |
+| POST | `/api/jugadores` | Sí | Crear jugador |
+| PUT | `/api/jugadores/:id` | Sí | Actualizar jugador |
+| DELETE | `/api/jugadores/:id` | Sí | Eliminar jugador |
+
+### Partidos
+
+| Método | Ruta | Auth | Descripción |
+|--------|------|------|-------------|
+| GET | `/api/partidos` | No | Listar todos los partidos con equipos |
+| GET | `/api/partidos/:id` | No | Obtener partido por ID |
+| POST | `/api/partidos` | Sí | Programar partido (fecha, hora, lugar, equipos) |
+| PUT | `/api/partidos/:id` | Sí | Editar partido (solo si no tiene resultado) |
+| DELETE | `/api/partidos/:id` | Sí | Eliminar partido (solo si no tiene resultado) |
+| POST | `/api/partidos/:id/resultado` | Sí | Cargar resultado y actualizar estadísticas automáticamente |
+
+### Clasificación
+
+| Método | Ruta | Auth | Descripción |
+|--------|------|------|-------------|
+| GET | `/api/clasificacion` | No | Tabla de posiciones ordenada con todos los campos requeridos |
+
+**Campos de respuesta de `/api/clasificacion`:**
+```json
+[
+  {
+    "posicion": 1,
+    "idEquipo": 2,
+    "nombre": "Los Tigres",
+    "puntos": 9,
+    "PJ": 3,
+    "PG": 3,
+    "PE": 0,
+    "PP": 0,
+    "tantosFavor": 250,
+    "tantosEnContra": 210,
+    "diferencia": 40
+  }
+]
 ```
 
 ---
 
-## Instalacion
+## Seguridad
 
-### 1. Clonar el Repositorio
+- **Autenticación JWT**: Las rutas administrativas requieren el header `Authorization: Bearer <token>`. El token expira en 12 horas.
+- **Cifrado de contraseñas**: bcryptjs con salt rounds = 10.
+- **Rate limiting**: Login limitado a 20 intentos por IP cada 15 minutos. Exceder el límite devuelve 429.
+- **CORS restringido**: Solo acepta requests de orígenes en `CORS_ORIGIN` (por defecto `localhost:5173` y `localhost:3000`).
+- **Validación de entradas**: Todos los endpoints usan schemas Zod con `.strict()` — rechaza campos desconocidos y aplica límites de tamaño en todos los strings.
+- **Validación de IDs**: Middleware `validateId` en todas las rutas con `:id` — rechaza IDs no enteros o negativos con 400.
+- **Nombres únicos**: No se puede crear un equipo con un nombre ya existente (409).
+- **Integridad referencial**: FK con `ON DELETE RESTRICT` en partidos impide eliminar equipos con historial de partidos (409).
+- **Transacciones**: La carga de resultados usa `sequelize.transaction()` con `SELECT ... FOR UPDATE` para garantizar consistencia bajo concurrencia.
+
+---
+
+## Instalación
+
+### Requisitos previos
+
+- Node.js v16+
+- MySQL v8.0+
+- npm
+
+### Pasos
 
 ```bash
+# 1. Clonar el repositorio
 git clone https://github.com/facMolina/tpo-liga-basquet.git
 cd tpo-liga-basquet
+
+# 2. Instalar dependencias
+cd client && npm install && cd ..
+cd server && npm install && cd ..
+
+# 3. Crear la base de datos en MySQL
+mysql -u root -p
+> CREATE DATABASE IF NOT EXISTS liga_basquet;
+> EXIT;
+
+# 4. Configurar variables de entorno (ver sección siguiente)
+
+# 5. Levantar el backend (sincroniza tablas automáticamente)
+cd server && npm run dev
+
+# 6. Cargar datos iniciales (una sola vez)
+node scripts/seedAdmin.js
+node scripts/seedLiga.js
+# O equivalente:
+npm run seed
+
+# 7. Levantar el frontend (otra terminal)
+cd client && npm run dev
 ```
 
-### 2. Instalar Dependencias del Frontend
+- **Backend:** `http://localhost:3000`
+- **Frontend:** `http://localhost:5173`
 
-```bash
-cd client
-npm install
-cd ..
-```
+---
 
-### 3. Instalar Dependencias del Backend
+## Configuración del entorno
 
-```bash
-cd server
-npm install
-cd ..
-```
-
-### 4. Configurar Variables de Entorno
-
-En la carpeta `/server`, crea un archivo `.env`:
+Crear el archivo `server/.env`:
 
 ```env
 NODE_ENV=development
@@ -89,517 +276,106 @@ DB_PORT=3306
 JWT_SECRET=tu_secreto_jwt_super_seguro
 ADMIN_USER=admin
 ADMIN_PASSWORD=adminpassword
+CORS_ORIGIN=http://localhost:5173,http://localhost:3000
 ```
 
-> **Nota:** Si configuraste una contraseña para el usuario root de MySQL durante la instalacion, completala en `DB_PASSWORD`. Si no configuraste una (instalacion por defecto), dejala vacia.
+**Credenciales de prueba:**
+- Usuario: `admin`
+- Contraseña: `adminpassword`
 
 ---
 
-## Configuracion de GitHub CLI
+## Cómo probar con Thunder Client
 
-GitHub CLI (`gh`) permite pushear codigo, crear Pull Requests y gestionar el repositorio desde la terminal sin necesidad de configurar tokens manualmente.
+Thunder Client es una extensión de VS Code para hacer requests HTTP, similar a Postman.
 
-### macOS
+### Configuración inicial
 
-```bash
-brew install gh
+1. Instalar la extensión **Thunder Client** en VS Code
+2. En el panel de Thunder Client → **Env** → crear un entorno `local` con variable `token` (valor vacío por ahora)
+3. Activar el entorno `local`
+
+### Flujo básico de prueba
+
+**Paso 1 — Verificar que el servidor responde:**
+```
+GET http://localhost:3000/api/health
+→ 200 {"status":"OK"}
 ```
 
-### Windows
-
-Descargar el instalador desde [cli.github.com](https://cli.github.com/) o instalar con winget:
-
-```bash
-winget install --id GitHub.cli
+**Paso 2 — Login y guardar token:**
+```
+POST http://localhost:3000/api/auth/login
+Headers: Content-Type: application/json
+Body: {"usuario":"admin","password":"adminpassword"}
+→ Copiar el valor de "token" y pegarlo en la variable {{token}} del entorno
 ```
 
-### Linux (Ubuntu/Debian)
-
-```bash
-sudo apt install gh
+**Paso 3 — Crear un equipo:**
+```
+POST http://localhost:3000/api/equipos
+Headers: Authorization: Bearer {{token}}
+Body: {"nombre":"Los Tigres","entrenador":"Juan Perez"}
+→ 201 con el equipo creado
 ```
 
-Para otras distribuciones ver [cli.github.com/packages](https://github.com/cli/cli/blob/trunk/docs/install_linux.md).
-
-### Autenticacion
-
-Una vez instalado, loguearse con tu cuenta de GitHub:
-
-```bash
-gh auth login
+**Paso 4 — Programar un partido:**
+```
+POST http://localhost:3000/api/partidos
+Headers: Authorization: Bearer {{token}}
+Body: {"fecha":"2026-05-15","hora":"19:00","lugar":"Estadio Municipal","idLocal":1,"idVisitante":2}
+→ 201 con el partido y equipos embebidos
 ```
 
-Seguir el asistente interactivo:
-1. Seleccionar **GitHub.com**
-2. Seleccionar **HTTPS** como protocolo
-3. Confirmar autenticacion con el navegador (se abre automaticamente)
-
-Para verificar que estas logueado:
-
-```bash
-gh auth status
+**Paso 5 — Cargar resultado:**
+```
+POST http://localhost:3000/api/partidos/1/resultado
+Headers: Authorization: Bearer {{token}}
+Body: {"puntosLocal":85,"puntosVisitante":72}
+→ 200 con partido actualizado y estadísticas de ambos equipos
 ```
 
-Deberias ver algo como:
-
+**Paso 6 — Ver clasificación:**
 ```
-github.com
-  ✓ Logged in to github.com account TU_USUARIO (keyring)
-  - Active account: true
-  - Git operations protocol: https
+GET http://localhost:3000/api/clasificacion
+→ 200 array ordenado por posición
 ```
-
-> **Importante:** Sin `gh auth login`, los comandos `git push` y `gh pr create` no van a funcionar. Cada integrante del equipo debe loguearse con su propia cuenta.
 
 ---
 
-## Configuracion de MySQL Local
+## Comportamiento ante errores
 
-Seguir estos pasos para instalar y configurar MySQL en tu maquina local.
-
-### macOS (con Homebrew)
-
-#### 1. Instalar MySQL
-
-```bash
-brew install mysql
-```
-
-#### 2. Iniciar el servicio de MySQL
-
-```bash
-brew services start mysql
-```
-
-Para verificar que esta corriendo:
-
-```bash
-brew services list
-```
-
-Deberias ver `mysql` con estado `started`.
-
-#### 3. Conectarse a MySQL
-
-MySQL se instala sin contraseña para el usuario `root`. Para conectarte:
-
-```bash
-mysql -u root
-```
-
-#### 4. Crear la base de datos
-
-Dentro de la consola de MySQL, ejecuta:
-
-```sql
-CREATE DATABASE IF NOT EXISTS liga_basquet;
-```
-
-Para verificar que se creo:
-
-```sql
-SHOW DATABASES;
-```
-
-Luego sali con:
-
-```sql
-EXIT;
-```
-
-#### 5. (Opcional) Asegurar la instalacion
-
-Si queres configurar una contraseña para root y mejorar la seguridad:
-
-```bash
-mysql_secure_installation
-```
-
-> **Importante:** Si configuras una contraseña, actualizala en el archivo `.env` (`DB_PASSWORD=tu_contraseña`).
-
-### Windows
-
-#### 1. Descargar MySQL
-
-Descargar el instalador desde [mysql.com/downloads](https://dev.mysql.com/downloads/mysql/).
-
-#### 2. Instalar
-
-Ejecutar el instalador y seguir el asistente. Seleccionar "MySQL Server" como minimo. Configurar la contraseña de root durante la instalacion.
-
-#### 3. Verificar la instalacion
-
-Abrir una terminal (cmd o PowerShell):
-
-```bash
-mysql -u root -p
-```
-
-Ingresar la contraseña configurada durante la instalacion.
-
-#### 4. Crear la base de datos
-
-```sql
-CREATE DATABASE IF NOT EXISTS liga_basquet;
-EXIT;
-```
-
-#### 5. Actualizar el `.env`
-
-Completar `DB_PASSWORD` con la contraseña que configuraste.
-
-### Linux (Ubuntu/Debian)
-
-#### 1. Instalar MySQL
-
-```bash
-sudo apt update
-sudo apt install mysql-server
-```
-
-#### 2. Iniciar el servicio
-
-```bash
-sudo systemctl start mysql
-sudo systemctl enable mysql
-```
-
-#### 3. Configurar y crear la base de datos
-
-```bash
-sudo mysql -u root
-```
-
-```sql
-ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'tu_contraseña';
-FLUSH PRIVILEGES;
-CREATE DATABASE IF NOT EXISTS liga_basquet;
-EXIT;
-```
-
-Actualizar `DB_PASSWORD` en el archivo `.env`.
-
-### Sincronizacion de tablas
-
-Una vez que MySQL esta corriendo y la base de datos `liga_basquet` fue creada, las tablas se generan automaticamente al levantar el servidor:
-
-```bash
-cd server
-npm run dev
-```
-
-Sequelize ejecuta `sync({ alter: true })` y crea las 5 tablas: `ligas`, `usuarios`, `equipos`, `jugadores` y `partidos`.
-
-### 6. Crear el usuario administrador inicial
-
-Una sola vez, ejecutar el script seed para insertar el usuario `admin` en la base de datos:
-
-```bash
-cd server
-node scripts/seedAdmin.js
-```
-
-> **Nota:** El seed es idempotente — si el usuario ya existe, no falla ni lo duplica.
-
----
-
-## API Endpoints
-
-### Autenticacion
-
-| Metodo | Ruta | Auth | Descripcion |
-|--------|------|------|-------------|
-| POST | `/api/auth/login` | No | Login. Devuelve token JWT |
-| GET | `/api/auth/me` | Si | Verifica token y devuelve datos del usuario |
-
-### Liga
-
-| Metodo | Ruta | Auth | Descripcion |
-|--------|------|------|-------------|
-| GET | `/api/ligas` | No | Listar todas las ligas |
-| GET | `/api/ligas/:id` | No | Obtener liga por ID |
-| POST | `/api/ligas` | Si | Crear liga |
-| PUT | `/api/ligas/:id` | Si | Actualizar liga |
-| DELETE | `/api/ligas/:id` | Si | Eliminar liga |
-
-### Equipos
-
-| Metodo | Ruta | Auth | Descripcion |
-|--------|------|------|-------------|
-| GET | `/api/equipos` | No | Listar todos los equipos |
-| GET | `/api/equipos/:id` | No | Vista detallada: equipo con jugadores y partidos |
-| POST | `/api/equipos` | Si | Crear equipo |
-| PUT | `/api/equipos/:id` | Si | Actualizar equipo |
-| DELETE | `/api/equipos/:id` | Si | Eliminar equipo (jugadores pasan a sin equipo) |
-
-### Jugadores
-
-| Metodo | Ruta | Auth | Descripcion |
-|--------|------|------|-------------|
-| GET | `/api/jugadores` | No | Listar todos los jugadores |
-| GET | `/api/jugadores/:id` | No | Obtener jugador por ID |
-| POST | `/api/jugadores` | Si | Crear jugador |
-| PUT | `/api/jugadores/:id` | Si | Actualizar jugador |
-| DELETE | `/api/jugadores/:id` | Si | Eliminar jugador |
-
----
-
-## Como probar la API localmente
-
-Podes usar **Thunder Client** (extension de VS Code), **Postman** o **curl** desde la terminal.
-
-### 1. Verificar que el servidor esta corriendo
-
-```bash
-curl http://localhost:3000/api/health
-# Respuesta esperada: {"status":"OK","message":"Backend funcionando correctamente"}
-```
-
-### 2. Login y obtencion del token
-
-```bash
-curl -X POST http://localhost:3000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"usuario":"admin","password":"adminpassword"}'
-```
-
-Respuesta:
-```json
-{
-  "message": "Login exitoso",
-  "token": "<JWT_TOKEN>",
-  "usuario": { "idUsuario": 1, "usuario": "admin" }
-}
-```
-
-Copiá el valor de `token` para usarlo en las siguientes requests.
-
-### 3. Crear un equipo (requiere token)
-
-```bash
-curl -X POST http://localhost:3000/api/equipos \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <JWT_TOKEN>" \
-  -d '{"nombre":"Tigres","entrenador":"Juan Perez"}'
-# Respuesta: 201 con el equipo creado
-```
-
-### 4. Ver equipo con jugadores y partidos
-
-```bash
-curl http://localhost:3000/api/equipos/1
-# Respuesta: equipo con arrays "Jugadors", "partidosLocal" y "partidosVisitante"
-```
-
-### 5. Crear un jugador y asignarlo a un equipo
-
-```bash
-curl -X POST http://localhost:3000/api/jugadores \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <JWT_TOKEN>" \
-  -d '{"nombre":"Lucas","apellido":"Gomez","categoria":"Sub-20","idEquipo":1}'
-# Respuesta: 201 con el jugador creado
-```
-
-### 6. Eliminar un equipo (los jugadores quedan sin equipo, no se borran)
-
-```bash
-curl -X DELETE http://localhost:3000/api/equipos/1 \
-  -H "Authorization: Bearer <JWT_TOKEN>"
-# Respuesta: {"message":"Equipo eliminado correctamente"}
-# Verificar: GET /api/jugadores → idEquipo del jugador pasa a null
-```
-
-### Comportamiento esperado ante errores
-
-| Situacion | Codigo | Respuesta |
+| Situación | Código | Respuesta |
 |-----------|--------|-----------|
 | Ruta protegida sin token | 401 | `{"error":"Autenticación requerida"}` |
-| Token invalido o expirado | 403 | `{"error":"Token inválido o expirado"}` |
 | Header mal formado (no Bearer) | 401 | `{"error":"Formato de autorización inválido. Use Bearer <token>"}` |
+| Token inválido o expirado | 403 | `{"error":"Token inválido o expirado"}` |
+| Demasiados intentos de login | 429 | `{"error":"Demasiados intentos de login. Intentá de nuevo en 15 minutos."}` |
+| ID no es un entero positivo en la URL | 400 | `{"error":"El ID debe ser un entero positivo"}` |
 | Recurso no encontrado | 404 | `{"error":"... no encontrado"}` |
-| Body invalido o campos faltantes | 400 | `{"errors":[...]}` |
-| idEquipo inexistente en jugador | 400 | `{"error":"El equipo especificado no existe"}` |
+| Body inválido, campos faltantes o campos extra | 400 | `{"errors":[...]}` |
+| idEquipo/idLocal/idVisitante inexistente | 400 | `{"error":"El equipo ... no existe"}` |
+| Nombre de equipo duplicado | 409 | `{"error":"Ya existe un equipo con ese nombre"}` |
+| Equipo con partidos asociados (DELETE) | 409 | `{"error":"No se puede eliminar el equipo: tiene N partido(s) asociado(s)"}` |
+| Partido con resultado ya cargado (PUT/DELETE) | 400 | `{"error":"No se puede modificar/eliminar un partido con resultado cargado"}` |
+| Re-carga de resultado (POST resultado con resultado previo) | 200 | Stats anteriores revertidas y nuevas aplicadas atómicamente |
+| Local = Visitante en partido | 400 | `{"error":"Un equipo no puede jugar contra sí mismo"}` |
 
 ---
 
-## Scripts de Ejecucion
+## Plan de Pruebas
 
-### Frontend (localhost:5173)
-
-```bash
-cd client
-npm run dev      # Inicia servidor de desarrollo con hot reload
-npm run build    # Compila para produccion
-npm run preview  # Visualiza la build de produccion
-```
-
-### Backend (localhost:3000)
-
-```bash
-cd server
-npm run dev      # Inicia servidor con nodemon (recarga automatica)
-npm start        # Inicia servidor en produccion
-```
-
-### Ejecutar Ambos Simultaneamente
-
-Abrir una terminal para cada proyecto:
-
-**Terminal 1 - Frontend:**
-```bash
-cd client && npm run dev
-```
-
-**Terminal 2 - Backend:**
-```bash
-cd server && npm run dev
-```
-
----
-
-## Estructura de Carpetas
-
-```
-tpo-liga-basquet/
-├── client/                    # Frontend React + Vite
-│   ├── src/
-│   │   ├── main.jsx          # Punto de entrada React
-│   │   ├── App.jsx           # Componente principal
-│   │   ├── index.css         # Estilos globales + Tailwind
-│   │   └── components/       # Componentes reutilizables
-│   ├── index.html            # HTML base
-│   ├── vite.config.js        # Configuracion Vite
-│   ├── tailwind.config.js    # Configuracion Tailwind CSS
-│   ├── postcss.config.js     # Configuracion PostCSS
-│   └── package.json          # Dependencias frontend
-│
-├── server/                    # Backend Express + Node.js (MVC)
-│   ├── config/
-│   │   └── database.js       # Conexion Sequelize a MySQL
-│   ├── models/               # Modelos Sequelize
-│   │   ├── index.js          # Relaciones y exports
-│   │   ├── Liga.js
-│   │   ├── Usuario.js
-│   │   ├── Equipo.js
-│   │   ├── Jugador.js
-│   │   └── Partido.js
-│   ├── controllers/          # Logica de negocio
-│   │   ├── authController.js # Login con validacion Zod + JWT
-│   │   ├── ligaController.js # CRUD Liga
-│   │   ├── equipoController.js # CRUD Equipo + Vista Detallada
-│   │   └── jugadorController.js # CRUD Jugador
-│   ├── routes/               # Rutas API
-│   │   ├── auth.js           # POST /api/auth/login | GET /api/auth/me
-│   │   ├── liga.js           # CRUD /api/ligas
-│   │   ├── equipo.js         # CRUD /api/equipos
-│   │   └── jugador.js        # CRUD /api/jugadores
-│   ├── middleware/           # Middlewares
-│   │   └── auth.js           # authenticateJWT — protege rutas privadas
-│   ├── scripts/
-│   │   └── seedAdmin.js      # Crea el usuario admin inicial
-│   ├── app.js                # Punto de entrada del servidor
-│   ├── .env                  # Variables de entorno (no versionado)
-│   └── package.json          # Dependencias backend
-│
-├── .gitignore                # Archivos ignorados en Git
-└── README.md                 # Este archivo
-```
-
----
-
-## Modelo de Base de Datos
-
-### Tablas
-
-#### Liga
-| Campo       | Tipo    | Restricciones          |
-|-------------|---------|------------------------|
-| idLiga      | INTEGER | PK, Auto-incremental   |
-| nombre      | STRING  | NOT NULL               |
-| temporada   | STRING  | NOT NULL               |
-| descripcion | TEXT    | Permite NULL           |
-
-#### Usuario
-| Campo         | Tipo    | Restricciones          |
-|---------------|---------|------------------------|
-| idUsuario     | INTEGER | PK, Auto-incremental   |
-| usuario       | STRING  | NOT NULL, UNIQUE       |
-| password_hash | STRING  | NOT NULL               |
-
-#### Equipo
-| Campo             | Tipo    | Restricciones          |
-|-------------------|---------|------------------------|
-| idEquipo          | INTEGER | PK, Auto-incremental   |
-| nombre            | STRING  | NOT NULL               |
-| entrenador        | STRING  | NOT NULL               |
-| partidosGanados   | INTEGER | Default 0              |
-| partidosEmpatados | INTEGER | Default 0              |
-| partidosPerdidos  | INTEGER | Default 0              |
-| puntosFavor       | INTEGER | Default 0              |
-| puntosEnContra    | INTEGER | Default 0              |
-
-#### Jugador
-| Campo     | Tipo    | Restricciones                          |
-|-----------|---------|----------------------------------------|
-| idJugador | INTEGER | PK, Auto-incremental                   |
-| nombre    | STRING  | NOT NULL                               |
-| apellido  | STRING  | NOT NULL                               |
-| categoria | STRING  | NOT NULL                               |
-| idEquipo  | INTEGER | FK a Equipo, Permite NULL, ON DELETE SET NULL |
-
-#### Partido
-| Campo           | Tipo     | Restricciones        |
-|-----------------|----------|----------------------|
-| idPartido       | INTEGER  | PK, Auto-incremental |
-| fecha           | DATEONLY | NOT NULL             |
-| hora            | TIME     | NOT NULL             |
-| lugar           | STRING   | NOT NULL             |
-| puntosLocal     | INTEGER  | Permite NULL         |
-| puntosVisitante | INTEGER  | Permite NULL         |
-| idLocal         | INTEGER  | FK a Equipo          |
-| idVisitante     | INTEGER  | FK a Equipo          |
-
-### Relaciones
-
-- **Equipo** 1:N **Jugador** — Un equipo tiene muchos jugadores. Si se elimina el equipo, `idEquipo` del jugador se setea en NULL.
-- **Equipo** 1:N **Partido (Local)** — Un equipo tiene muchos partidos como local (`idLocal`).
-- **Equipo** 1:N **Partido (Visitante)** — Un equipo tiene muchos partidos como visitante (`idVisitante`).
-
----
-
-## Tecnologias Utilizadas
-
-### Frontend
-| Tecnologia    | Version | Proposito       |
-|---------------|---------|-----------------|
-| React         | 18.2+   | Libreria UI     |
-| Vite          | 5.4+    | Bundler rapido  |
-| Tailwind CSS  | 4.2+    | Estilos CSS     |
-| Lucide-React  | 0.294+  | Iconos          |
-| React Router  | 6.18+   | Navegacion      |
-
-### Backend
-| Tecnologia  | Version | Proposito            |
-|-------------|---------|----------------------|
-| Node.js     | 16+     | Runtime JavaScript   |
-| Express     | 5.2+    | Framework web        |
-| Sequelize   | 6.37+   | ORM MySQL            |
-| MySQL2      | 3.20+   | Driver MySQL         |
-| JWT         | 9.0+    | Autenticacion        |
-| Bcrypt      | 3.0+    | Cifrado              |
-| Zod         | 3.23+   | Validaciones         |
-| Dotenv      | 17.3+   | Variables de entorno |
+El plan de pruebas completo (casos detallados, inputs/outputs, escenarios de seguridad y desempate) se encuentra en [`testplan.md`](./testplan.md).
 
 ---
 
 ## Equipo
 
-- **Facundo** - Full Stack Developer
-- **Mateo** - Full Stack Developer
+- **Facundo** — Full Stack Developer
+- **Mateo** — Full Stack Developer
 
 ---
 
 ## Licencia
 
-Este proyecto es de codigo cerrado para uso academico (TPO).
+Proyecto de código cerrado para uso académico (TPO).

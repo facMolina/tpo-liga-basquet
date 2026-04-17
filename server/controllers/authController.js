@@ -4,9 +4,9 @@ const { z } = require('zod');
 const { Usuario } = require('../models');
 
 const loginSchema = z.object({
-  usuario: z.string().min(1, { message: 'El usuario es requerido' }),
-  password: z.string().min(1, { message: 'La contraseña es requerida' }),
-});
+  usuario: z.string().min(1, { message: 'El usuario es requerido' }).max(255),
+  password: z.string().min(1, { message: 'La contraseña es requerida' }).max(1000),
+}).strict();
 
 const login = async (req, res) => {
   const validation = loginSchema.safeParse(req.body);
