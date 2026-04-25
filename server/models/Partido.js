@@ -10,6 +10,12 @@ const Partido = sequelize.define('Partido', {
   fecha: {
     type: DataTypes.DATEONLY,
     allowNull: false,
+    get() {
+      const raw = this.getDataValue('fecha');
+      if (!raw) return raw;
+      const [y, m, d] = raw.split('-');
+      return `${d}/${m}/${y}`;
+    },
   },
   hora: {
     type: DataTypes.TIME,

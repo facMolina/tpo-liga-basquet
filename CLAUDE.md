@@ -35,6 +35,13 @@ Monorepo con dos proyectos independientes:
 - Los schemas de update rechazan body vacío `{}` (400)
 - Los stats de Equipo (PG, PE, PP, puntosFavor, puntosEnContra) solo se actualizan via `cargarResultado`, nunca via PUT /equipos
 
+### Formato de fechas
+- API (input y output): `DD/MM/AAAA`
+- DB (MySQL `DATEONLY`): `YYYY-MM-DD` (formato canónico, estándar SQL)
+- Conversión input→DB: `transform` de Zod en `partidoController.js` (`fechaSchema`)
+- Conversión DB→output: `getter` en `models/Partido.js` (campo `fecha`)
+- Validación: regex shape + `refine` que verifica que la fecha exista en el calendario (rechaza `31/02`, `29/02` en años no bisiestos)
+
 ### Auth
 - `POST /api/auth/login` → devuelve JWT firmado con `JWT_SECRET`
 - Header esperado: `Authorization: Bearer <token>`

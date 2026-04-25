@@ -100,8 +100,8 @@ El backend sigue una arquitectura MVC estricta: `models/` define las entidades y
 | Campo | Tipo | Restricciones |
 |-------|------|---------------|
 | idPartido | INTEGER | PK, auto-incremental |
-| fecha | DATEONLY | NOT NULL |
-| hora | TIME | NOT NULL |
+| fecha | DATEONLY | NOT NULL. API: `DD/MM/AAAA`. DB: `YYYY-MM-DD` |
+| hora | TIME | NOT NULL. Formato `HH:MM` (24h) |
 | lugar | STRING | NOT NULL |
 | puntosLocal | INTEGER | Permite NULL (null = pendiente) |
 | puntosVisitante | INTEGER | Permite NULL (null = pendiente) |
@@ -323,7 +323,7 @@ Body: {"nombre":"Los Tigres","entrenador":"Juan Perez"}
 ```
 POST http://localhost:3000/api/partidos
 Headers: Authorization: Bearer {{token}}
-Body: {"fecha":"2026-05-15","hora":"19:00","lugar":"Estadio Municipal","idLocal":1,"idVisitante":2}
+Body: {"fecha":"15/05/2026","hora":"19:00","lugar":"Estadio Municipal","idLocal":1,"idVisitante":2}
 → 201 con el partido y equipos embebidos
 ```
 
