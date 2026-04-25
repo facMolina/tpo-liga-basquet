@@ -42,7 +42,7 @@ Detalle completo de instalación, variables de entorno y troubleshooting en [Ins
 - [Seguridad](#seguridad)
 - [Instalación](#instalación)
 - [Configuración del entorno](#configuración-del-entorno)
-- [Cómo probar con Thunder Client](#cómo-probar-con-thunder-client)
+- [Cómo probar con Postman](#cómo-probar-con-postman)
 - [Comportamiento ante errores](#comportamiento-ante-errores)
 - [Plan de Pruebas](#plan-de-pruebas)
 
@@ -313,15 +313,18 @@ CORS_ORIGIN=http://localhost:5173,http://localhost:3000
 
 ---
 
-## Cómo probar con Thunder Client
+## Cómo probar con Postman
 
-Thunder Client es una extensión de VS Code para hacer requests HTTP, similar a Postman.
+Postman es un cliente HTTP para probar APIs. La colección y el environment están versionados en `postman/`.
 
 ### Configuración inicial
 
-1. Instalar la extensión **Thunder Client** en VS Code
-2. En el panel de Thunder Client → **Env** → crear un entorno `local` con variable `token` (valor vacío por ahora)
-3. Activar el entorno `local`
+1. Instalar **Postman** (desktop o extensión web).
+2. **Import** → seleccionar `postman/liga-basquet.postman_collection.json` y `postman/liga-basquet.postman_environment.json`.
+3. En el dropdown de environments (arriba a la derecha) → seleccionar `liga-basquet (local)`.
+4. La variable `token` se setea automáticamente al correr el request `[OK] POST /auth/login — admin (extrae token)` del folder `1. Auth`.
+
+Para correr toda la colección end-to-end: click derecho sobre la colección → **Run collection**. Detalles en [`postman/README.md`](./postman/README.md).
 
 ### Flujo básico de prueba
 
