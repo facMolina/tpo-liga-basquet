@@ -1,0 +1,15 @@
+$kind: http-request
+name: "[FAIL 409] PUT /equipos/:id — nombre duplicado del visitante"
+url: "{{baseUrl}}/equipos/{{idEquipoLocal}}"
+method: PUT
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: '{"nombre":"{{nombreEquipoVisitante}}"}'
+scripts:
+  - type: afterResponse
+    code: pm.test('status 409', () => pm.response.to.have.status(409));
+    language: text/javascript
+order: 13000

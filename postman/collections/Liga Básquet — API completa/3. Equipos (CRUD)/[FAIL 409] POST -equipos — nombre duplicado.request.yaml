@@ -1,0 +1,15 @@
+$kind: http-request
+name: "[FAIL 409] POST /equipos — nombre duplicado"
+url: "{{baseUrl}}/equipos"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: '{"nombre":"{{nombreEquipoLocal}}","entrenador":"Otro"}'
+scripts:
+  - type: afterResponse
+    code: pm.test('status 409', () => pm.response.to.have.status(409));
+    language: text/javascript
+order: 11000

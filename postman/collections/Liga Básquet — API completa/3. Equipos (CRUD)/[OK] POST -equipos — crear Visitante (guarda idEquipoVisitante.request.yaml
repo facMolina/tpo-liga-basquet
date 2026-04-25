@@ -1,0 +1,19 @@
+$kind: http-request
+name: "[OK] POST /equipos — crear Visitante (guarda idEquipoVisitante)"
+url: "{{baseUrl}}/equipos"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: '{"nombre":"PM Visitante {{$timestamp}}","entrenador":"Coach Visitante"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('status 201', () => pm.response.to.have.status(201));
+      const json = pm.response.json();
+      pm.collectionVariables.set('idEquipoVisitante', json.idEquipo);
+      pm.collectionVariables.set('nombreEquipoVisitante', json.nombre);
+    language: text/javascript
+order: 2000

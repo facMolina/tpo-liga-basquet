@@ -1,0 +1,11 @@
+name: liga-basquet (local)
+values:
+  - key: baseUrl
+    value: 'http://localhost:3000/api'
+    enabled: true
+  - key: adminUser
+    value: admin
+    enabled: true
+  - key: adminPassword
+    value: adminpassword
+    enabled: true

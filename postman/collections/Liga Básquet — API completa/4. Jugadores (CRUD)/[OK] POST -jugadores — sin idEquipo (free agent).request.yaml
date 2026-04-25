@@ -1,0 +1,15 @@
+$kind: http-request
+name: "[OK] POST /jugadores — sin idEquipo (free agent)"
+url: "{{baseUrl}}/jugadores"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: '{"nombre":"Pedro","apellido":"Libre","categoria":"U18"}'
+scripts:
+  - type: afterResponse
+    code: pm.test('status 201', () => pm.response.to.have.status(201));
+    language: text/javascript
+order: 2000

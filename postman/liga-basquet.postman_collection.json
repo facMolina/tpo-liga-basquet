@@ -1,0 +1,3098 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "Liga Básquet — API completa",
+    "description": "Colección de prueba end-to-end para la API de Liga de Básquet. Cubre health, auth, ligas, equipos, jugadores, partidos, resultado y clasificación.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "0. Smoke Test",
+      "item": [
+        {
+          "name": "[OK] GET /health — backend levantado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('status === OK', () => pm.expect(json.status).to.eql('OK'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. Auth",
+      "item": [
+        {
+          "name": "[OK] POST /auth/login — admin (extrae token)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"usuario\":\"{{adminUser}}\",\"password\":\"{{adminPassword}}\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('response trae token', () => pm.expect(json.token).to.be.a('string'));",
+                  "pm.collectionVariables.set('token', json.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[OK] GET /auth/me — token válido",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('response trae usuario', () => pm.expect(json.usuario).to.be.an('object'));",
+                  "pm.test('usuario.usuario es string', () => pm.expect(json.usuario.usuario).to.be.a('string'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 400] POST /auth/login — body vacío",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 400] POST /auth/login — usuario vacío",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"usuario\":\"\",\"password\":\"adminpassword\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 400] POST /auth/login — sin password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"usuario\":\"admin\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 401] POST /auth/login — credenciales inválidas",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"usuario\":\"admin\",\"password\":\"mal\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 401] GET /auth/me — sin header Authorization",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 401] GET /auth/me — header malformado (Token abc)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Token abc123"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 403] GET /auth/me — token inválido",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer abc.invalid.token"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Ligas (CRUD)",
+      "item": [
+        {
+          "name": "[OK] POST /ligas — crear (guarda idLiga)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ligas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ligas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"Liga Test Postman\",\"temporada\":\"2026\",\"descripcion\":\"Generada por la colección\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('trae idLiga', () => pm.expect(json.idLiga).to.be.a('number'));",
+                  "pm.collectionVariables.set('idLiga', json.idLiga);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[OK] GET /ligas — listar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ligas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ligas"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('response es array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[OK] GET /ligas/:id — leer",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ligas/{{idLiga}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ligas",
+                "{{idLiga}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('idLiga coincide', () => pm.expect(json.idLiga).to.eql(Number(pm.collectionVariables.get('idLiga'))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[OK] PUT /ligas/:id — actualizar",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ligas/{{idLiga}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ligas",
+                "{{idLiga}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"Liga Test Postman v2\",\"temporada\":\"2026\",\"descripcion\":\"Actualizada\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('nombre actualizado', () => pm.expect(json.nombre).to.eql('Liga Test Postman v2'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 401] POST /ligas — sin token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ligas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ligas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"X\",\"temporada\":\"2026\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 400] POST /ligas — body vacío",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ligas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ligas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 400] GET /ligas/abc — id no numérico",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ligas/abc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ligas",
+                "abc"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 400] GET /ligas/0 — id cero",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ligas/0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ligas",
+                "0"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 404] GET /ligas/99999 — no existe",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ligas/99999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ligas",
+                "99999"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 404] PUT /ligas/99999 — no existe",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ligas/99999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ligas",
+                "99999"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"X\",\"temporada\":\"2026\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[OK] DELETE /ligas/:id — borrar (cleanup)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ligas/{{idLiga}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ligas",
+                "{{idLiga}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Equipos (CRUD)",
+      "item": [
+        {
+          "name": "[OK] POST /equipos — crear Local (guarda idEquipoLocal)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/equipos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"PM Local {{$timestamp}}\",\"entrenador\":\"Coach Local\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('trae idEquipo', () => pm.expect(json.idEquipo).to.be.a('number'));",
+                  "pm.collectionVariables.set('idEquipoLocal', json.idEquipo);",
+                  "pm.collectionVariables.set('nombreEquipoLocal', json.nombre);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[OK] POST /equipos — crear Visitante (guarda idEquipoVisitante)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/equipos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"PM Visitante {{$timestamp}}\",\"entrenador\":\"Coach Visitante\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('idEquipoVisitante', json.idEquipo);",
+                  "pm.collectionVariables.set('nombreEquipoVisitante', json.nombre);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[OK] POST /equipos — crear Tercero (guarda idEquipoTercero)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/equipos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"PM Tercero {{$timestamp}}\",\"entrenador\":\"Coach Tercero\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('idEquipoTercero', json.idEquipo);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[OK] GET /equipos — listar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/equipos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipos"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('response es array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[OK] GET /equipos/:id — vista detallada con jugadores y partidos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/equipos/{{idEquipoLocal}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipos",
+                "{{idEquipoLocal}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Jugadors es array', () => pm.expect(json.Jugadors).to.be.an('array'));",
+                  "pm.test('partidosLocal es array', () => pm.expect(json.partidosLocal).to.be.an('array'));",
+                  "pm.test('partidosVisitante es array', () => pm.expect(json.partidosVisitante).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[OK] PUT /equipos/:id — actualizar entrenador",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/equipos/{{idEquipoLocal}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipos",
+                "{{idEquipoLocal}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"entrenador\":\"Coach Local v2\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('entrenador actualizado', () => pm.expect(pm.response.json().entrenador).to.eql('Coach Local v2'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 401] POST /equipos — sin token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/equipos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"X\",\"entrenador\":\"Y\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 400] POST /equipos — body vacío",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/equipos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 400] POST /equipos — sin entrenador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/equipos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"Sin Coach\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 400] POST /equipos — campo extra (mass assignment)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/equipos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"Hack\",\"entrenador\":\"Y\",\"partidosGanados\":999}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 409] POST /equipos — nombre duplicado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/equipos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"{{nombreEquipoLocal}}\",\"entrenador\":\"Otro\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 400] PUT /equipos/:id — body vacío",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/equipos/{{idEquipoLocal}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipos",
+                "{{idEquipoLocal}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 409] PUT /equipos/:id — nombre duplicado del visitante",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/equipos/{{idEquipoLocal}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipos",
+                "{{idEquipoLocal}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"{{nombreEquipoVisitante}}\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 400] PUT /equipos/:id — campo extra (mass assignment)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/equipos/{{idEquipoLocal}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipos",
+                "{{idEquipoLocal}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"partidosGanados\":999}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 404] PUT /equipos/99999 — no existe",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/equipos/99999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipos",
+                "99999"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"entrenador\":\"X\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 400] GET /equipos/abc — id no numérico",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/equipos/abc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipos",
+                "abc"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 404] DELETE /equipos/99999 — no existe",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/equipos/99999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipos",
+                "99999"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Jugadores (CRUD)",
+      "item": [
+        {
+          "name": "[OK] POST /jugadores — con idEquipo (guarda idJugador)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/jugadores",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "jugadores"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"Juan\",\"apellido\":\"Test\",\"categoria\":\"U20\",\"idEquipo\":{{idEquipoLocal}}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('trae idJugador', () => pm.expect(json.idJugador).to.be.a('number'));",
+                  "pm.collectionVariables.set('idJugador', json.idJugador);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[OK] POST /jugadores — sin idEquipo (free agent)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/jugadores",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "jugadores"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"Pedro\",\"apellido\":\"Libre\",\"categoria\":\"U18\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[OK] GET /jugadores — listar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/jugadores",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "jugadores"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('response es array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[OK] GET /jugadores/:id — incluye equipo embebido",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/jugadores/{{idJugador}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "jugadores",
+                "{{idJugador}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('incluye Equipo (alias Sequelize)', () => pm.expect(json).to.have.property('Equipo'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[OK] PUT /jugadores/:id — reasignar al visitante",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/jugadores/{{idJugador}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "jugadores",
+                "{{idJugador}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"idEquipo\":{{idEquipoVisitante}}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[OK] PUT /jugadores/:id — desasignar (idEquipo: null)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/jugadores/{{idJugador}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "jugadores",
+                "{{idJugador}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"idEquipo\":null}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 401] POST /jugadores — sin token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/jugadores",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "jugadores"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"X\",\"apellido\":\"Y\",\"categoria\":\"U20\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 400] POST /jugadores — body vacío",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/jugadores",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "jugadores"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 400] POST /jugadores — idEquipo inexistente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/jugadores",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "jugadores"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"X\",\"apellido\":\"Y\",\"categoria\":\"U20\",\"idEquipo\":99999}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 400] POST /jugadores — idEquipo no entero",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/jugadores",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "jugadores"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"X\",\"apellido\":\"Y\",\"categoria\":\"U20\",\"idEquipo\":\"abc\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 400] PUT /jugadores/:id — body vacío",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/jugadores/{{idJugador}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "jugadores",
+                "{{idJugador}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 400] PUT /jugadores/:id — idEquipo inexistente",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/jugadores/{{idJugador}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "jugadores",
+                "{{idJugador}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"idEquipo\":99999}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 404] PUT /jugadores/99999 — no existe",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/jugadores/99999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "jugadores",
+                "99999"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"X\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 400] GET /jugadores/0 — id cero",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/jugadores/0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "jugadores",
+                "0"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 404] DELETE /jugadores/99999 — no existe",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/jugadores/99999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "jugadores",
+                "99999"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Partidos (CRUD + reglas de negocio)",
+      "item": [
+        {
+          "name": "[OK] POST /partidos — local vs visitante (guarda idPartido)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"fecha\":\"2026-05-15\",\"hora\":\"19:00\",\"lugar\":\"Estadio Postman\",\"idLocal\":{{idEquipoLocal}},\"idVisitante\":{{idEquipoVisitante}}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('trae idPartido', () => pm.expect(json.idPartido).to.be.a('number'));",
+                  "pm.collectionVariables.set('idPartido', json.idPartido);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[OK] POST /partidos — local vs tercero (guarda idPartido2)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"fecha\":\"2026-05-22\",\"hora\":\"20:30\",\"lugar\":\"Estadio Postman 2\",\"idLocal\":{{idEquipoLocal}},\"idVisitante\":{{idEquipoTercero}}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('idPartido2', pm.response.json().idPartido);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[OK] GET /partidos — listar con equipos embebidos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/partidos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('response es array', () => pm.expect(pm.response.json()).to.be.an('array'));",
+                  "const arr = pm.response.json();",
+                  "if (arr.length > 0) { pm.test('trae equipoLocal embebido', () => pm.expect(arr[0]).to.have.property('equipoLocal')); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[OK] GET /partidos/:id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{idPartido}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{idPartido}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('equipoLocal presente', () => pm.expect(json.equipoLocal).to.be.an('object'));",
+                  "pm.test('equipoVisitante presente', () => pm.expect(json.equipoVisitante).to.be.an('object'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[OK] PUT /partidos/:id — cambiar lugar (sin resultado todavía)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{idPartido}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{idPartido}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"lugar\":\"Estadio Postman (modificado)\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('lugar actualizado', () => pm.expect(pm.response.json().lugar).to.eql('Estadio Postman (modificado)'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 401] POST /partidos — sin token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"fecha\":\"2026-05-15\",\"hora\":\"19:00\",\"lugar\":\"X\",\"idLocal\":{{idEquipoLocal}},\"idVisitante\":{{idEquipoVisitante}}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 400] POST /partidos — body vacío",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 400] POST /partidos — local == visitante",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"fecha\":\"2026-05-15\",\"hora\":\"19:00\",\"lugar\":\"X\",\"idLocal\":{{idEquipoLocal}},\"idVisitante\":{{idEquipoLocal}}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 400] POST /partidos — idLocal inexistente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"fecha\":\"2026-05-15\",\"hora\":\"19:00\",\"lugar\":\"X\",\"idLocal\":99999,\"idVisitante\":{{idEquipoVisitante}}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 400] POST /partidos — idVisitante inexistente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"fecha\":\"2026-05-15\",\"hora\":\"19:00\",\"lugar\":\"X\",\"idLocal\":{{idEquipoLocal}},\"idVisitante\":99999}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 400] POST /partidos — fecha mal formateada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"fecha\":\"15/05/2026\",\"hora\":\"19:00\",\"lugar\":\"X\",\"idLocal\":{{idEquipoLocal}},\"idVisitante\":{{idEquipoVisitante}}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 400] POST /partidos — hora mal formateada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"fecha\":\"2026-05-15\",\"hora\":\"7pm\",\"lugar\":\"X\",\"idLocal\":{{idEquipoLocal}},\"idVisitante\":{{idEquipoVisitante}}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 400] PUT /partidos/:id — body vacío",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{idPartido}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{idPartido}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 400] PUT /partidos/:id — local == visitante actual",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{idPartido}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{idPartido}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"idLocal\":{{idEquipoVisitante}}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 404] PUT /partidos/99999 — no existe",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/99999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "99999"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"lugar\":\"X\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 404] DELETE /partidos/99999 — no existe",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/99999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "99999"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 409] DELETE /equipos/:id — equipo con partidos asociados (RESTRICT)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/equipos/{{idEquipoLocal}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "equipos",
+                "{{idEquipoLocal}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Carga de resultado",
+      "item": [
+        {
+          "name": "[OK] POST /partidos/:id/resultado — primera carga (local gana 85-70)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{idPartido}}/resultado",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{idPartido}}",
+                "resultado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"puntosLocal\":85,\"puntosVisitante\":70}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('puntosLocal actualizado', () => pm.expect(json.puntosLocal).to.eql(85));",
+                  "pm.test('equipoLocal.partidosGanados >= 1', () => pm.expect(json.equipoLocal.partidosGanados).to.be.at.least(1));",
+                  "pm.test('equipoVisitante.partidosPerdidos >= 1', () => pm.expect(json.equipoVisitante.partidosPerdidos).to.be.at.least(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[OK] POST /partidos/:id/resultado — re-carga (60-75, revierte y reaplica)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{idPartido}}/resultado",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{idPartido}}",
+                "resultado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"puntosLocal\":60,\"puntosVisitante\":75}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('puntosLocal actualizado a 60', () => pm.expect(json.puntosLocal).to.eql(60));",
+                  "pm.test('equipoLocal.partidosJugados === 1 (no se duplicó por re-carga)', () => pm.expect(json.equipoLocal.partidosJugados).to.eql(1));",
+                  "pm.test('equipoVisitante.partidosGanados >= 1 (ahora gana visitante)', () => pm.expect(json.equipoVisitante.partidosGanados).to.be.at.least(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[OK] POST /partidos/:id/resultado — empate en partido 2 (80-80)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{idPartido2}}/resultado",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{idPartido2}}",
+                "resultado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"puntosLocal\":80,\"puntosVisitante\":80}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('equipoLocal.partidosEmpatados >= 1', () => pm.expect(json.equipoLocal.partidosEmpatados).to.be.at.least(1));",
+                  "pm.test('equipoVisitante.partidosEmpatados >= 1', () => pm.expect(json.equipoVisitante.partidosEmpatados).to.be.at.least(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 401] POST /partidos/:id/resultado — sin token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{idPartido}}/resultado",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{idPartido}}",
+                "resultado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"puntosLocal\":50,\"puntosVisitante\":40}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 404] POST /partidos/99999/resultado — partido inexistente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/99999/resultado",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "99999",
+                "resultado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"puntosLocal\":50,\"puntosVisitante\":40}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 400] POST /partidos/:id/resultado — puntosLocal negativo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{idPartido}}/resultado",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{idPartido}}",
+                "resultado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"puntosLocal\":-1,\"puntosVisitante\":40}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 400] POST /partidos/:id/resultado — puntosLocal no entero",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{idPartido}}/resultado",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{idPartido}}",
+                "resultado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"puntosLocal\":1.5,\"puntosVisitante\":40}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 400] PUT /partidos/:id — partido con resultado cargado",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{idPartido}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{idPartido}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"lugar\":\"No debería poder cambiar\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 400] DELETE /partidos/:id — partido con resultado cargado",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/partidos/{{idPartido}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos",
+                "{{idPartido}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "7. Clasificación",
+      "item": [
+        {
+          "name": "[OK] GET /clasificacion — público, ordenado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/clasificacion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clasificacion"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('response es array', () => pm.expect(pm.response.json()).to.be.an('array'));",
+                  "const arr = pm.response.json();",
+                  "if (arr.length > 0) {",
+                  "  const item = arr[0];",
+                  "  const campos = ['posicion','idEquipo','nombre','puntos','PJ','PG','PE','PP','tantosFavor','tantosEnContra','diferencia'];",
+                  "  campos.forEach(c => pm.test('campo ' + c + ' presente', () => pm.expect(item).to.have.property(c)));",
+                  "}",
+                  "pm.test('orden por puntos DESC', () => {",
+                  "  for (let i = 1; i < arr.length; i++) {",
+                  "    pm.expect(arr[i-1].puntos).to.be.at.least(arr[i].puntos);",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "idLiga",
+      "value": ""
+    },
+    {
+      "key": "idEquipoLocal",
+      "value": ""
+    },
+    {
+      "key": "idEquipoVisitante",
+      "value": ""
+    },
+    {
+      "key": "idEquipoTercero",
+      "value": ""
+    },
+    {
+      "key": "nombreEquipoLocal",
+      "value": ""
+    },
+    {
+      "key": "nombreEquipoVisitante",
+      "value": ""
+    },
+    {
+      "key": "idJugador",
+      "value": ""
+    },
+    {
+      "key": "idPartido",
+      "value": ""
+    },
+    {
+      "key": "idPartido2",
+      "value": ""
+    }
+  ]
+}

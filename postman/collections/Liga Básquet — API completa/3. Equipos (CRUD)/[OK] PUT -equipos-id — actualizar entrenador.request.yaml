@@ -1,0 +1,17 @@
+$kind: http-request
+name: "[OK] PUT /equipos/:id — actualizar entrenador"
+url: "{{baseUrl}}/equipos/{{idEquipoLocal}}"
+method: PUT
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: '{"entrenador":"Coach Local v2"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('status 200', () => pm.response.to.have.status(200));
+      pm.test('entrenador actualizado', () => pm.expect(pm.response.json().entrenador).to.eql('Coach Local v2'));
+    language: text/javascript
+order: 6000

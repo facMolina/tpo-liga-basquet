@@ -19,8 +19,10 @@ Monorepo con dos proyectos independientes:
 5. `models/index.js` define todas las relaciones entre modelos
 
 ### Modelos y relaciones clave
+- Modelos: `Liga`, `Usuario`, `Equipo`, `Jugador`, `Partido` (registrados en `models/index.js`)
 - `Equipo` 1:N `Jugador` — `ON DELETE SET NULL` (eliminar equipo no borra jugadores)
-- `Equipo` 1:N `Partido` — dos FKs: `idLocal` (alias `equipoLocal`/`partidosLocal`) e `idVisitante` (alias `equipoVisitante`/`partidosVisitante`)
+- `Equipo` 1:N `Partido` — dos FKs: `idLocal` (alias `equipoLocal`/`partidosLocal`) e `idVisitante` (alias `equipoVisitante`/`partidosVisitante`). `ON DELETE RESTRICT`: no se puede borrar un equipo con partidos asociados (409)
+- `Equipo.nombre` es único — crear o renombrar a uno existente devuelve 409
 - Al usar `include` en queries de Partido, siempre especificar el alias correcto (`equipoLocal`, `equipoVisitante`)
 - Los modelos se definen como factory functions: `module.exports = (sequelize) => sequelize.define(...)`
 
@@ -36,9 +38,10 @@ Monorepo con dos proyectos independientes:
 - Los stats de Equipo (PG, PE, PP, puntosFavor, puntosEnContra) solo se actualizan via `cargarResultado`, nunca via PUT /equipos
 
 ### Auth
-- `POST /api/auth/login` → devuelve JWT firmado con `JWT_SECRET`
+- `POST /api/auth/login` → devuelve JWT firmado con `JWT_SECRET` (expira en 12h)
 - Header esperado: `Authorization: Bearer <token>`
 - `authenticateJWT` rechaza con 401 si falta header, 401 si mal formato, 403 si token inválido
+- Rate limiting: login limitado a 20 intentos por IP cada 15 min (429 al excederse)
 
 ---
 
@@ -49,6 +52,7 @@ Monorepo con dos proyectos independientes:
 cd server
 npm run dev      # nodemon, recarga automática
 npm start        # producción
+npm run seed     # corre seedAdmin + seedLiga
 node scripts/seedAdmin.js  # crear usuario admin (idempotente)
 node scripts/seedLiga.js   # poblar DB con datos de prueba
 ```

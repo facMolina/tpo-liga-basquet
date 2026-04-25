@@ -1,0 +1,17 @@
+$kind: http-request
+name: "[OK] PUT /partidos/:id — cambiar lugar (sin resultado todavía)"
+url: "{{baseUrl}}/partidos/{{idPartido}}"
+method: PUT
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: '{"lugar":"Estadio Postman (modificado)"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('status 200', () => pm.response.to.have.status(200));
+      pm.test('lugar actualizado', () => pm.expect(pm.response.json().lugar).to.eql('Estadio Postman (modificado)'));
+    language: text/javascript
+order: 5000

@@ -1,0 +1,13 @@
+$kind: http-request
+name: "[OK] GET /partidos — listar con equipos embebidos"
+url: "{{baseUrl}}/partidos"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('status 200', () => pm.response.to.have.status(200));
+      pm.test('response es array', () => pm.expect(pm.response.json()).to.be.an('array'));
+      const arr = pm.response.json();
+      if (arr.length > 0) { pm.test('trae equipoLocal embebido', () => pm.expect(arr[0]).to.have.property('equipoLocal')); }
+    language: text/javascript
+order: 3000

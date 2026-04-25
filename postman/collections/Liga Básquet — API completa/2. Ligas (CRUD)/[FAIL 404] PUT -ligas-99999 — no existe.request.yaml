@@ -1,0 +1,15 @@
+$kind: http-request
+name: "[FAIL 404] PUT /ligas/99999 — no existe"
+url: "{{baseUrl}}/ligas/99999"
+method: PUT
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: '{"nombre":"X","temporada":"2026"}'
+scripts:
+  - type: afterResponse
+    code: pm.test('status 404', () => pm.response.to.have.status(404));
+    language: text/javascript
+order: 10000

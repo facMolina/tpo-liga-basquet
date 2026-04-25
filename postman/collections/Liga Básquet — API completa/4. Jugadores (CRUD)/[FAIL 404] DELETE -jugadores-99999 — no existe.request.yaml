@@ -1,0 +1,11 @@
+$kind: http-request
+name: "[FAIL 404] DELETE /jugadores/99999 — no existe"
+url: "{{baseUrl}}/jugadores/99999"
+method: DELETE
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: pm.test('status 404', () => pm.response.to.have.status(404));
+    language: text/javascript
+order: 15000
