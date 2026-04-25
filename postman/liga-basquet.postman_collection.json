@@ -774,7 +774,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\"nombre\":\"PM Local {{$timestamp}}\",\"entrenador\":\"Coach Local\"}"
+              "raw": "{\"nombre\":\"Equipo_test_local_{{$timestamp}}\",\"entrenador\":\"Coach_test_local\"}"
             }
           },
           "event": [
@@ -818,7 +818,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\"nombre\":\"PM Visitante {{$timestamp}}\",\"entrenador\":\"Coach Visitante\"}"
+              "raw": "{\"nombre\":\"Equipo_test_visitante_{{$timestamp}}\",\"entrenador\":\"Coach_test_visitante\"}"
             }
           },
           "event": [
@@ -861,7 +861,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\"nombre\":\"PM Tercero {{$timestamp}}\",\"entrenador\":\"Coach Tercero\"}"
+              "raw": "{\"nombre\":\"Equipo_test_tercero_{{$timestamp}}\",\"entrenador\":\"Coach_test_tercero\"}"
             }
           },
           "event": [

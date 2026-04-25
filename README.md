@@ -4,6 +4,36 @@ Aplicación web para la gestión integral de una liga de básquet juvenil. Permi
 
 ---
 
+## Inicio rápido
+
+Pre-requisitos: Node 16+, MySQL 8+, npm.
+
+```bash
+# 1. Instalar dependencias (desde la raíz del proyecto)
+(cd server && npm install)
+(cd client && npm install)
+
+# 2. Crear la base de datos
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS liga_basquet;"
+
+# 3. Crear server/.env (ver sección "Configuración del entorno" abajo)
+
+# 4. Levantar backend (puerto 3000) y sembrar admin + datos demo
+cd server && npm run dev          # en una terminal
+cd server && npm run seed         # en otra terminal, una sola vez
+
+# 5. Levantar frontend (puerto 5173)
+cd client && npm run dev
+```
+
+- API: http://localhost:3000/api/health
+- Frontend: http://localhost:5173
+- Login admin: `admin` / `adminpassword`
+
+Detalle completo de instalación, variables de entorno y troubleshooting en [Instalación](#instalación) y [Configuración del entorno](#configuración-del-entorno).
+
+---
+
 ## Tabla de Contenidos
 
 - [Arquitectura técnica](#arquitectura-técnica)
@@ -228,9 +258,7 @@ El backend sigue una arquitectura MVC estricta: `models/` define las entidades y
 ### Pasos
 
 ```bash
-# 1. Clonar el repositorio
-git clone https://github.com/facMolina/tpo-liga-basquet.git
-cd tpo-liga-basquet
+# 1. Posicionarse en la raíz del proyecto (donde están las carpetas client/ y server/)
 
 # 2. Instalar dependencias
 cd client && npm install && cd ..

@@ -6,8 +6,8 @@ headers:
   Content-Type: application/json
   Authorization: Bearer {{token}}
 body:
-  type: text
-  content: '{"nombre":"X"}'
+  type: json
+  content: "{\r\n    \"nombre\": \"X\"\r\n}"
 scripts:
   - type: afterResponse
     code: pm.test('status 404', () => pm.response.to.have.status(404));

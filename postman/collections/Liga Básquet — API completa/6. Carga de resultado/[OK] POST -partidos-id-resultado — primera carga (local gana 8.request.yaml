@@ -6,8 +6,14 @@ headers:
   Content-Type: application/json
   Authorization: Bearer {{token}}
 body:
-  type: text
-  content: '{"puntosLocal":85,"puntosVisitante":70}'
+  type: json
+  content: "{\r
+
+    \    \"puntosLocal\": 85,\r
+
+    \    \"puntosVisitante\": 70\r
+
+    }"
 scripts:
   - type: afterResponse
     code: |-

@@ -6,8 +6,20 @@ headers:
   Content-Type: application/json
   Authorization: Bearer {{token}}
 body:
-  type: text
-  content: '{"fecha":"2026-05-15","hora":"19:00","lugar":"X","idLocal":{{idEquipoLocal}},"idVisitante":99999}'
+  type: json
+  content: "{\r
+
+    \    \"fecha\": \"2026-05-15\",\r
+
+    \    \"hora\": \"19:00\",\r
+
+    \    \"lugar\": \"X\",\r
+
+    \    \"idLocal\": {{idEquipoLocal}},\r
+
+    \    \"idVisitante\": 99999\r
+
+    }"
 scripts:
   - type: afterResponse
     code: pm.test('status 400', () => pm.response.to.have.status(400));

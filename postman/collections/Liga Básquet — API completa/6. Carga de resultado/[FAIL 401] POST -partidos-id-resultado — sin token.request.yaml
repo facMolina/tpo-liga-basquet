@@ -5,8 +5,14 @@ method: POST
 headers:
   Content-Type: application/json
 body:
-  type: text
-  content: '{"puntosLocal":50,"puntosVisitante":40}'
+  type: json
+  content: "{\r
+
+    \    \"puntosLocal\": 50,\r
+
+    \    \"puntosVisitante\": 40\r
+
+    }"
 scripts:
   - type: afterResponse
     code: pm.test('status 401', () => pm.response.to.have.status(401));

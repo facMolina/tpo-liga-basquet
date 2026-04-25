@@ -6,8 +6,12 @@ headers:
   Content-Type: application/json
   Authorization: Bearer {{token}}
 body:
-  type: text
-  content: '{"lugar":"Estadio Postman (modificado)"}'
+  type: json
+  content: "{\r
+
+    \    \"lugar\": \"Estadio Postman (modificado)\"\r
+
+    }"
 scripts:
   - type: afterResponse
     code: |-

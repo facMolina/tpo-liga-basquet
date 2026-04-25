@@ -5,8 +5,14 @@ method: POST
 headers:
   Content-Type: application/json
 body:
-  type: text
-  content: '{"usuario":"admin","password":"mal"}'
+  type: json
+  content: "{\r
+
+    \    \"usuario\": \"admin\",\r
+
+    \    \"password\": \"mal\"\r
+
+    }"
 scripts:
   - type: afterResponse
     code: pm.test('status 401', () => pm.response.to.have.status(401));

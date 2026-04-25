@@ -5,8 +5,14 @@ method: POST
 headers:
   Content-Type: application/json
 body:
-  type: text
-  content: '{"nombre":"X","entrenador":"Y"}'
+  type: json
+  content: "{\r
+
+    \    \"nombre\": \"X\",\r
+
+    \    \"entrenador\": \"Y\"\r
+
+    }"
 scripts:
   - type: afterResponse
     code: pm.test('status 401', () => pm.response.to.have.status(401));

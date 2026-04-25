@@ -6,8 +6,18 @@ headers:
   Content-Type: application/json
   Authorization: Bearer {{token}}
 body:
-  type: text
-  content: '{"nombre":"Juan","apellido":"Test","categoria":"U20","idEquipo":{{idEquipoLocal}}}'
+  type: json
+  content: "{\r
+
+    \    \"nombre\": \"Juan\",\r
+
+    \    \"apellido\": \"Test\",\r
+
+    \    \"categoria\": \"U20\",\r
+
+    \    \"idEquipo\": {{idEquipoLocal}}\r
+
+    }"
 scripts:
   - type: afterResponse
     code: |-

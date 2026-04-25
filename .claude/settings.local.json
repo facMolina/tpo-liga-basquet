@@ -34,7 +34,14 @@
       "Bash(netstat -ano)",
       "Bash(awk '{print $5}')",
       "Bash(xargs -I {} taskkill //F //PID {})",
-      "Bash(npx --yes newman@6 run collections/liga-basquet.postman_collection.json -e environments/liga-basquet.postman_environment.json --reporters cli)"
+      "Bash(npx --yes newman@6 run collections/liga-basquet.postman_collection.json -e environments/liga-basquet.postman_environment.json --reporters cli)",
+      "Bash(npm ls *)",
+      "PowerShell(Test-NetConnection *)",
+      "Bash(npx --yes newman@6 run liga-basquet.postman_collection.json -e liga-basquet.postman_environment.json)",
+      "PowerShell(Get-NetTCPConnection *)",
+      "PowerShell(Stop-Process *)",
+      "Bash(npx --yes newman@6 run liga-basquet.postman_collection.json -e liga-basquet.postman_environment.json --reporter-cli-no-summary --reporter-cli-no-failures)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/api/clasificacion)"
     ]
   }
 }

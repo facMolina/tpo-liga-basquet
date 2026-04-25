@@ -5,8 +5,14 @@ method: POST
 headers:
   Content-Type: application/json
 body:
-  type: text
-  content: '{"usuario":"{{adminUser}}","password":"{{adminPassword}}"}'
+  type: json
+  content: "{\r
+
+    \    \"usuario\": \"{{adminUser}}\",\r
+
+    \    \"password\": \"{{adminPassword}}\"\r
+
+    }"
 scripts:
   - type: afterResponse
     code: |-

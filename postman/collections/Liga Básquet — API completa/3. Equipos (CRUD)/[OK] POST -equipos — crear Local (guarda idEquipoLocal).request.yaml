@@ -6,8 +6,14 @@ headers:
   Content-Type: application/json
   Authorization: Bearer {{token}}
 body:
-  type: text
-  content: '{"nombre":"PM Local {{$timestamp}}","entrenador":"Coach Local"}'
+  type: json
+  content: "{\r
+
+    \    \"nombre\": \"Equipo_test_local_{{$timestamp}}\",\r
+
+    \    \"entrenador\": \"Coach_test_local\"\r
+
+    }"
 scripts:
   - type: afterResponse
     code: |-

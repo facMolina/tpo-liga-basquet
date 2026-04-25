@@ -6,8 +6,14 @@ headers:
   Content-Type: application/json
   Authorization: Bearer {{token}}
 body:
-  type: text
-  content: '{"nombre":"{{nombreEquipoLocal}}","entrenador":"Otro"}'
+  type: json
+  content: "{\r
+
+    \    \"nombre\": \"{{nombreEquipoLocal}}\",\r
+
+    \    \"entrenador\": \"Otro\"\r
+
+    }"
 scripts:
   - type: afterResponse
     code: pm.test('status 409', () => pm.response.to.have.status(409));

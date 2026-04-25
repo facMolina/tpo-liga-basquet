@@ -6,8 +6,14 @@ headers:
   Content-Type: application/json
   Authorization: Bearer {{token}}
 body:
-  type: text
-  content: '{"puntosLocal":-1,"puntosVisitante":40}'
+  type: json
+  content: "{\r
+
+    \    \"puntosLocal\": -1,\r
+
+    \    \"puntosVisitante\": 40\r
+
+    }"
 scripts:
   - type: afterResponse
     code: pm.test('status 400', () => pm.response.to.have.status(400));

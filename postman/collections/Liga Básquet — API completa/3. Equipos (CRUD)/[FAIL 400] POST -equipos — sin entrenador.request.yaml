@@ -6,8 +6,12 @@ headers:
   Content-Type: application/json
   Authorization: Bearer {{token}}
 body:
-  type: text
-  content: '{"nombre":"Sin Coach"}'
+  type: json
+  content: "{\r
+
+    \    \"nombre\": \"Sin Coach\"\r
+
+    }"
 scripts:
   - type: afterResponse
     code: pm.test('status 400', () => pm.response.to.have.status(400));

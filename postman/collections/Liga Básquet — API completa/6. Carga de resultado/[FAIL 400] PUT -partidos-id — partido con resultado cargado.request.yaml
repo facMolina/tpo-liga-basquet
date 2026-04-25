@@ -6,8 +6,12 @@ headers:
   Content-Type: application/json
   Authorization: Bearer {{token}}
 body:
-  type: text
-  content: '{"lugar":"No debería poder cambiar"}'
+  type: json
+  content: "{\r
+
+    \    \"lugar\": \"No debería poder cambiar\"\r
+
+    }"
 scripts:
   - type: afterResponse
     code: pm.test('status 400', () => pm.response.to.have.status(400));

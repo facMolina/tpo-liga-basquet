@@ -6,8 +6,16 @@ headers:
   Content-Type: application/json
   Authorization: Bearer {{token}}
 body:
-  type: text
-  content: '{"nombre":"Hack","entrenador":"Y","partidosGanados":999}'
+  type: json
+  content: "{\r
+
+    \    \"nombre\": \"Hack\",\r
+
+    \    \"entrenador\": \"Y\",\r
+
+    \    \"partidosGanados\": 999\r
+
+    }"
 scripts:
   - type: afterResponse
     code: pm.test('status 400', () => pm.response.to.have.status(400));

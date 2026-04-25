@@ -6,8 +6,20 @@ headers:
   Content-Type: application/json
   Authorization: Bearer {{token}}
 body:
-  type: text
-  content: '{"fecha":"2026-05-15","hora":"19:00","lugar":"Estadio Postman","idLocal":{{idEquipoLocal}},"idVisitante":{{idEquipoVisitante}}}'
+  type: json
+  content: "{\r
+
+    \    \"fecha\": \"2026-05-15\",\r
+
+    \    \"hora\": \"19:00\",\r
+
+    \    \"lugar\": \"Estadio Postman\",\r
+
+    \    \"idLocal\": {{idEquipoLocal}},\r
+
+    \    \"idVisitante\": {{idEquipoVisitante}}\r
+
+    }"
 scripts:
   - type: afterResponse
     code: |-

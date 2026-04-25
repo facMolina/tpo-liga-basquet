@@ -6,8 +6,12 @@ headers:
   Content-Type: application/json
   Authorization: Bearer {{token}}
 body:
-  type: text
-  content: '{"entrenador":"Coach Local v2"}'
+  type: json
+  content: "{\r
+
+    \    \"entrenador\": \"Coach Local v2\"\r
+
+    }"
 scripts:
   - type: afterResponse
     code: |-
