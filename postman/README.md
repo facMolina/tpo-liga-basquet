@@ -8,10 +8,12 @@ Colección end-to-end para verificar que la app esté levantada, hacer login, pr
 
 ## Archivos
 
-- `collections/liga-basquet.postman_collection.json` — colección Postman v2.1
-- `environments/liga-basquet.postman_environment.json` — environment local (`baseUrl`, credenciales admin)
+- `liga-basquet.postman_collection.json` — colección Postman v2.1 (sidecar exportado, este es el que importás en Postman / consume Newman)
+- `liga-basquet.postman_environment.json` — environment local (`baseUrl`, credenciales admin)
+- `_generate.js` — script Node que regenera ambos sidecars a partir de plantillas internas
+- `collections/Liga Básquet — API completa/` — spec-as-code (YAMLs por request) que usa Postman desktop. No se importan a Newman directamente; el sidecar v2.1 es la fuente para CLI.
 
-Las rutas siguen la estructura estándar de workspace de Postman, declarada en `.postman/resources.yaml`.
+El workspace de Postman está declarado en `.postman/resources.yaml`.
 
 ---
 
@@ -35,7 +37,7 @@ Las rutas siguen la estructura estándar de workspace de Postman, declarada en `
 ### Por CLI con Newman
 ```bash
 cd postman
-npx --yes newman@6 run collections/liga-basquet.postman_collection.json -e environments/liga-basquet.postman_environment.json
+npx --yes newman@6 run liga-basquet.postman_collection.json -e liga-basquet.postman_environment.json
 ```
 Exit code `0` = todos los assertions OK.
 

@@ -148,7 +148,7 @@ const folderEquipos = {
       method: 'POST',
       path: ['equipos'],
       headers: [jsonHeader, authHeader],
-      body: rawBody(`{"nombre":"PM Local {{$timestamp}}","entrenador":"Coach Local"}`),
+      body: rawBody(`{"nombre":"Equipo_test_local_{{$timestamp}}","entrenador":"Coach_test_local"}`),
       tests: [
         expectStatus(201),
         `const json = pm.response.json();`,
@@ -162,7 +162,7 @@ const folderEquipos = {
       method: 'POST',
       path: ['equipos'],
       headers: [jsonHeader, authHeader],
-      body: rawBody(`{"nombre":"PM Visitante {{$timestamp}}","entrenador":"Coach Visitante"}`),
+      body: rawBody(`{"nombre":"Equipo_test_visitante_{{$timestamp}}","entrenador":"Coach_test_visitante"}`),
       tests: [
         expectStatus(201),
         `const json = pm.response.json();`,
@@ -175,7 +175,7 @@ const folderEquipos = {
       method: 'POST',
       path: ['equipos'],
       headers: [jsonHeader, authHeader],
-      body: rawBody(`{"nombre":"PM Tercero {{$timestamp}}","entrenador":"Coach Tercero"}`),
+      body: rawBody(`{"nombre":"Equipo_test_tercero_{{$timestamp}}","entrenador":"Coach_test_tercero"}`),
       tests: [
         expectStatus(201),
         `const json = pm.response.json();`,

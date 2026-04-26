@@ -6,7 +6,7 @@ Aplicación web para la gestión integral de una liga de básquet juvenil. Permi
 
 ## Inicio rápido
 
-Pre-requisitos: Node 16+, MySQL 8+, npm.
+Pre-requisitos: Node 18+, MySQL 8+, npm.
 
 ```bash
 # 1. Instalar dependencias (desde la raíz del proyecto)
@@ -54,7 +54,7 @@ Detalle completo de instalación, variables de entorno y troubleshooting en [Ins
 
 | Capa | Tecnología | Versión |
 |------|-----------|---------|
-| Runtime | Node.js | 16+ |
+| Runtime | Node.js | 18+ |
 | Framework web | Express | 5.2+ |
 | ORM | Sequelize | 6.37+ |
 | Base de datos | MySQL | 8.0+ |
@@ -251,7 +251,7 @@ El backend sigue una arquitectura MVC estricta: `models/` define las entidades y
 
 ### Requisitos previos
 
-- Node.js v16+
+- Node.js v18+
 - MySQL v8.0+
 - npm
 

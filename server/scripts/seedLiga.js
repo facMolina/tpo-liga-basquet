@@ -48,7 +48,7 @@ async function seed() {
     process.exit(0);
   } catch (error) {
     console.error('Error al hacer el seed:', error);
-    await sequelize.close();
+    try { await sequelize.close(); } catch (_) { /* swallow: ya estamos en error path */ }
     process.exit(1);
   }
 }
