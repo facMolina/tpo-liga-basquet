@@ -4,6 +4,36 @@ Aplicación web para la gestión integral de una liga de básquet juvenil. Permi
 
 ---
 
+## Inicio rápido
+
+Pre-requisitos: Node 18+, MySQL 8+, npm.
+
+```bash
+# 1. Instalar dependencias (desde la raíz del proyecto)
+(cd server && npm install)
+(cd client && npm install)
+
+# 2. Crear la base de datos
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS liga_basquet;"
+
+# 3. Crear server/.env (ver sección "Configuración del entorno" abajo)
+
+# 4. Levantar backend (puerto 3000) y sembrar admin + datos demo
+cd server && npm run dev          # en una terminal
+cd server && npm run seed         # en otra terminal, una sola vez
+
+# 5. Levantar frontend (puerto 5173)
+cd client && npm run dev
+```
+
+- API: http://localhost:3000/api/health
+- Frontend: http://localhost:5173
+- Login admin: `admin` / `adminpassword`
+
+Detalle completo de instalación, variables de entorno y troubleshooting en [Instalación](#instalación) y [Configuración del entorno](#configuración-del-entorno).
+
+---
+
 ## Tabla de Contenidos
 
 - [Arquitectura técnica](#arquitectura-técnica)
@@ -12,7 +42,7 @@ Aplicación web para la gestión integral de una liga de básquet juvenil. Permi
 - [Seguridad](#seguridad)
 - [Instalación](#instalación)
 - [Configuración del entorno](#configuración-del-entorno)
-- [Cómo probar con Thunder Client](#cómo-probar-con-thunder-client)
+- [Cómo probar con Postman](#cómo-probar-con-postman)
 - [Comportamiento ante errores](#comportamiento-ante-errores)
 - [Plan de Pruebas](#plan-de-pruebas)
 
@@ -24,7 +54,7 @@ Aplicación web para la gestión integral de una liga de básquet juvenil. Permi
 
 | Capa | Tecnología | Versión |
 |------|-----------|---------|
-| Runtime | Node.js | 16+ |
+| Runtime | Node.js | 18+ |
 | Framework web | Express | 5.2+ |
 | ORM | Sequelize | 6.37+ |
 | Base de datos | MySQL | 8.0+ |
@@ -221,16 +251,14 @@ El backend sigue una arquitectura MVC estricta: `models/` define las entidades y
 
 ### Requisitos previos
 
-- Node.js v16+
+- Node.js v18+
 - MySQL v8.0+
 - npm
 
 ### Pasos
 
 ```bash
-# 1. Clonar el repositorio
-git clone https://github.com/facMolina/tpo-liga-basquet.git
-cd tpo-liga-basquet
+# 1. Posicionarse en la raíz del proyecto (donde están las carpetas client/ y server/)
 
 # 2. Instalar dependencias
 cd client && npm install && cd ..
@@ -285,15 +313,18 @@ CORS_ORIGIN=http://localhost:5173,http://localhost:3000
 
 ---
 
-## Cómo probar con Thunder Client
+## Cómo probar con Postman
 
-Thunder Client es una extensión de VS Code para hacer requests HTTP, similar a Postman.
+Postman es un cliente HTTP para probar APIs. La colección y el environment están versionados en `postman/`.
 
 ### Configuración inicial
 
-1. Instalar la extensión **Thunder Client** en VS Code
-2. En el panel de Thunder Client → **Env** → crear un entorno `local` con variable `token` (valor vacío por ahora)
-3. Activar el entorno `local`
+1. Instalar **Postman** (desktop o extensión web).
+2. **Import** → seleccionar `postman/liga-basquet.postman_collection.json` y `postman/liga-basquet.postman_environment.json`.
+3. En el dropdown de environments (arriba a la derecha) → seleccionar `liga-basquet (local)`.
+4. La variable `token` se setea automáticamente al correr el request `[OK] POST /auth/login — admin (extrae token)` del folder `1. Auth`.
+
+Para correr toda la colección end-to-end: click derecho sobre la colección → **Run collection**. Detalles en [`postman/README.md`](./postman/README.md).
 
 ### Flujo básico de prueba
 

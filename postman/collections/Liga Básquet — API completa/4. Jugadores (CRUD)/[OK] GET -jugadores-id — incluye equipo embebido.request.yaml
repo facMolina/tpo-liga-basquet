@@ -1,0 +1,12 @@
+$kind: http-request
+name: "[OK] GET /jugadores/:id — incluye equipo embebido"
+url: "{{baseUrl}}/jugadores/{{idJugador}}"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('status 200', () => pm.response.to.have.status(200));
+      const json = pm.response.json();
+      pm.test('incluye Equipo (alias Sequelize)', () => pm.expect(json).to.have.property('Equipo'));
+    language: text/javascript
+order: 4000

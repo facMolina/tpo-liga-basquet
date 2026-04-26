@@ -1,0 +1,19 @@
+$kind: http-request
+name: "[FAIL 400] PUT /equipos/:id — campo extra (mass assignment)"
+url: "{{baseUrl}}/equipos/{{idEquipoLocal}}"
+method: PUT
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: json
+  content: "{\r
+
+    \    \"partidosGanados\": 999\r
+
+    }"
+scripts:
+  - type: afterResponse
+    code: pm.test('status 400', () => pm.response.to.have.status(400));
+    language: text/javascript
+order: 14000

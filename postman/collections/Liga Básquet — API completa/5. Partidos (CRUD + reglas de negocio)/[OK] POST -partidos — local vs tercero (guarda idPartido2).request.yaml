@@ -1,0 +1,29 @@
+$kind: http-request
+name: "[OK] POST /partidos — local vs tercero (guarda idPartido2)"
+url: "{{baseUrl}}/partidos"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: json
+  content: "{\r
+
+    \    \"fecha\": \"2026-05-22\",\r
+
+    \    \"hora\": \"20:30\",\r
+
+    \    \"lugar\": \"Estadio Postman 2\",\r
+
+    \    \"idLocal\": {{idEquipoLocal}},\r
+
+    \    \"idVisitante\": {{idEquipoTercero}}\r
+
+    }"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('status 201', () => pm.response.to.have.status(201));
+      pm.collectionVariables.set('idPartido2', pm.response.json().idPartido);
+    language: text/javascript
+order: 2000

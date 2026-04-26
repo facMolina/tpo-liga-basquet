@@ -1,0 +1,27 @@
+$kind: http-request
+name: "[OK] POST /ligas — crear (guarda idLiga)"
+url: "{{baseUrl}}/ligas"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: json
+  content: "{\r
+
+    \    \"nombre\": \"Liga Test Postman\",\r
+
+    \    \"temporada\": \"2026\",\r
+
+    \    \"descripcion\": \"Generada por la test\"\r
+
+    }"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('status 201', () => pm.response.to.have.status(201));
+      const json = pm.response.json();
+      pm.test('trae idLiga', () => pm.expect(json.idLiga).to.be.a('number'));
+      pm.collectionVariables.set('idLiga', json.idLiga);
+    language: text/javascript
+order: 1000

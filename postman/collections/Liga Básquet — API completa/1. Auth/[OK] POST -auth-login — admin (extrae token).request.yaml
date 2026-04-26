@@ -1,0 +1,24 @@
+$kind: http-request
+name: "[OK] POST /auth/login — admin (extrae token)"
+url: "{{baseUrl}}/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: "{\r
+
+    \    \"usuario\": \"{{adminUser}}\",\r
+
+    \    \"password\": \"{{adminPassword}}\"\r
+
+    }"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('status 200', () => pm.response.to.have.status(200));
+      const json = pm.response.json();
+      pm.test('response trae token', () => pm.expect(json.token).to.be.a('string'));
+      pm.collectionVariables.set('token', json.token);
+    language: text/javascript
+order: 1000

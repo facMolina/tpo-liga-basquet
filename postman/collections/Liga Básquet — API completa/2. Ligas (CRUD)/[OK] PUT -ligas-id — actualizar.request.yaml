@@ -1,0 +1,26 @@
+$kind: http-request
+name: "[OK] PUT /ligas/:id — actualizar"
+url: "{{baseUrl}}/ligas/{{idLiga}}"
+method: PUT
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: json
+  content: "{\r
+
+    \    \"nombre\": \"Liga Test Postman v2\",\r
+
+    \    \"temporada\": \"2026\",\r
+
+    \    \"descripcion\": \"Actualizada_2\"\r
+
+    }"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('status 200', () => pm.response.to.have.status(200));
+      const json = pm.response.json();
+      pm.test('nombre actualizado', () => pm.expect(json.nombre).to.eql('Liga Test Postman v2'));
+    language: text/javascript
+order: 4000

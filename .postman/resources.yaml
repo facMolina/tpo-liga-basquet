@@ -1,0 +1,15 @@
+# Use this workspace to collaborate
+workspace:
+  id: a5487339-666d-4d00-8876-8dd1edaf9d14
+
+localResources:
+  collections:
+    - ../postman/liga-basquet.postman_collection.json
+  environments:
+    - ../postman/liga-basquet.postman_environment.json
+
+# Each entry here maps a local resource to one or more corresponding objects in Postman Cloud
+
+cloudResources:
+  collections:
+    ../postman/collections/Liga Básquet — API completa: a1b2c3d4-e5f6-7890-abcd-ef1234567890

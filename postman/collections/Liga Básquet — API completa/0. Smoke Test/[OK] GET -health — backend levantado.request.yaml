@@ -1,0 +1,12 @@
+$kind: http-request
+name: "[OK] GET /health — backend levantado"
+url: "{{baseUrl}}/health"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('status 200', () => pm.response.to.have.status(200));
+      const json = pm.response.json();
+      pm.test('status === OK', () => pm.expect(json.status).to.eql('OK'));
+    language: text/javascript
+order: 1000

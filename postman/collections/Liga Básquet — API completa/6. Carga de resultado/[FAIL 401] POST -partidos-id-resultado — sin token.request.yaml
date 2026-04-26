@@ -1,0 +1,20 @@
+$kind: http-request
+name: "[FAIL 401] POST /partidos/:id/resultado — sin token"
+url: "{{baseUrl}}/partidos/{{idPartido}}/resultado"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: "{\r
+
+    \    \"puntosLocal\": 50,\r
+
+    \    \"puntosVisitante\": 40\r
+
+    }"
+scripts:
+  - type: afterResponse
+    code: pm.test('status 401', () => pm.response.to.have.status(401));
+    language: text/javascript
+order: 4000
