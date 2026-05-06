@@ -1,15 +1,17 @@
 const { z } = require('zod');
 const { Op } = require('sequelize');
-const { Equipo, Jugador, Partido } = require('../models');
+const { Equipo, Jugador, Partido, Liga } = require('../models');
 
 const equipoCreateSchema = z.object({
   nombre: z.string().min(1, { message: 'El nombre es requerido' }).max(255),
   entrenador: z.string().min(1, { message: 'El entrenador es requerido' }).max(255),
+  idLiga: z.number().int().positive({ message: 'idLiga debe ser un entero positivo' }),
 }).strict();
 
 const equipoUpdateSchema = z.object({
   nombre: z.string().min(1, { message: 'El nombre es requerido' }).max(255).optional(),
   entrenador: z.string().min(1, { message: 'El entrenador es requerido' }).max(255).optional(),
+  idLiga: z.number().int().positive({ message: 'idLiga debe ser un entero positivo' }).optional(),
 }).strict();
 
 const getAll = async (req, res) => {
@@ -56,6 +58,10 @@ const create = async (req, res) => {
   }
 
   try {
+    const liga = await Liga.findByPk(validation.data.idLiga);
+    if (!liga) {
+      return res.status(400).json({ error: 'La liga especificada no existe' });
+    }
     const existe = await Equipo.findOne({ where: { nombre: validation.data.nombre } });
     if (existe) {
       return res.status(409).json({ error: 'Ya existe un equipo con ese nombre' });
@@ -89,6 +95,12 @@ const update = async (req, res) => {
       });
       if (duplicado) {
         return res.status(409).json({ error: 'Ya existe un equipo con ese nombre' });
+      }
+    }
+    if (validation.data.idLiga) {
+      const liga = await Liga.findByPk(validation.data.idLiga);
+      if (!liga) {
+        return res.status(400).json({ error: 'La liga especificada no existe' });
       }
     }
     await equipo.update(validation.data);

@@ -195,8 +195,8 @@ const cargarResultado = async (req, res) => {
         partidosPerdidos: equipoLocal.partidosPerdidos - oldLocalPP,
         puntosFavor: equipoLocal.puntosFavor - partido.puntosLocal,
         puntosEnContra: equipoLocal.puntosEnContra - partido.puntosVisitante,
-        puntos: equipoLocal.puntos - (oldLocalPG * 3 + oldLocalPE),
-        diferencia: equipoLocal.diferencia - (partido.puntosLocal - partido.puntosVisitante),
+        puntosTotales: equipoLocal.puntosTotales - (oldLocalPG * 3 + oldLocalPE),
+        diferenciaPuntos: equipoLocal.diferenciaPuntos - (partido.puntosLocal - partido.puntosVisitante),
       }, { transaction: t });
 
       await equipoVisitante.update({
@@ -205,8 +205,8 @@ const cargarResultado = async (req, res) => {
         partidosPerdidos: equipoVisitante.partidosPerdidos - oldVisitantePP,
         puntosFavor: equipoVisitante.puntosFavor - partido.puntosVisitante,
         puntosEnContra: equipoVisitante.puntosEnContra - partido.puntosLocal,
-        puntos: equipoVisitante.puntos - (oldVisitantePG * 3 + oldVisitantePE),
-        diferencia: equipoVisitante.diferencia - (partido.puntosVisitante - partido.puntosLocal),
+        puntosTotales: equipoVisitante.puntosTotales - (oldVisitantePG * 3 + oldVisitantePE),
+        diferenciaPuntos: equipoVisitante.diferenciaPuntos - (partido.puntosVisitante - partido.puntosLocal),
       }, { transaction: t });
 
       // Recargar para tener valores actualizados
@@ -234,8 +234,8 @@ const cargarResultado = async (req, res) => {
       puntosFavor: equipoLocal.puntosFavor + puntosLocal,
       puntosEnContra: equipoLocal.puntosEnContra + puntosVisitante,
       partidosJugados: equipoLocal.partidosJugados + deltaLocalPJ,
-      puntos: equipoLocal.puntos + (localPG * 3 + localPE),
-      diferencia: equipoLocal.diferencia + (puntosLocal - puntosVisitante),
+      puntosTotales: equipoLocal.puntosTotales + (localPG * 3 + localPE),
+      diferenciaPuntos: equipoLocal.diferenciaPuntos + (puntosLocal - puntosVisitante),
     }, { transaction: t });
 
     await equipoVisitante.update({
@@ -245,8 +245,8 @@ const cargarResultado = async (req, res) => {
       puntosFavor: equipoVisitante.puntosFavor + puntosVisitante,
       puntosEnContra: equipoVisitante.puntosEnContra + puntosLocal,
       partidosJugados: equipoVisitante.partidosJugados + deltaVisitantePJ,
-      puntos: equipoVisitante.puntos + (visitantePG * 3 + visitantePE),
-      diferencia: equipoVisitante.diferencia + (puntosVisitante - puntosLocal),
+      puntosTotales: equipoVisitante.puntosTotales + (visitantePG * 3 + visitantePE),
+      diferenciaPuntos: equipoVisitante.diferenciaPuntos + (puntosVisitante - puntosLocal),
     }, { transaction: t });
 
     await t.commit();
@@ -257,12 +257,12 @@ const cargarResultado = async (req, res) => {
         {
           model: Equipo,
           as: 'equipoLocal',
-          attributes: ['idEquipo', 'nombre', 'partidosGanados', 'partidosEmpatados', 'partidosPerdidos', 'puntosFavor', 'puntosEnContra', 'puntos', 'partidosJugados', 'diferencia'],
+          attributes: ['idEquipo', 'nombre', 'partidosGanados', 'partidosEmpatados', 'partidosPerdidos', 'puntosFavor', 'puntosEnContra', 'puntosTotales', 'partidosJugados', 'diferenciaPuntos'],
         },
         {
           model: Equipo,
           as: 'equipoVisitante',
-          attributes: ['idEquipo', 'nombre', 'partidosGanados', 'partidosEmpatados', 'partidosPerdidos', 'puntosFavor', 'puntosEnContra', 'puntos', 'partidosJugados', 'diferencia'],
+          attributes: ['idEquipo', 'nombre', 'partidosGanados', 'partidosEmpatados', 'partidosPerdidos', 'puntosFavor', 'puntosEnContra', 'puntosTotales', 'partidosJugados', 'diferenciaPuntos'],
         },
       ],
     });

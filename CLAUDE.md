@@ -28,8 +28,8 @@ Monorepo con dos proyectos independientes:
 
 ### Motor de partidos y clasificación
 - `POST /api/partidos/:id/resultado` — carga o re-carga resultado con `SELECT ... FOR UPDATE` (transacción + row-level lock). Si ya tiene resultado, revierte atómicamente las stats anteriores antes de aplicar las nuevas; `partidosJugados` no se incrementa en re-carga.
-- Al cargar resultado, actualiza automáticamente los contadores del `Equipo` (PG, PE, PP, puntosFavor, puntosEnContra, puntos, partidosJugados, diferencia)
-- `GET /api/clasificacion` — lee valores pre-calculados del modelo `Equipo` con `ORDER BY puntos DESC, diferencia DESC, puntosFavor DESC` (sin cálculos en memoria)
+- Al cargar resultado, actualiza automáticamente los contadores del `Equipo` (PG, PE, PP, puntosFavor, puntosEnContra, puntosTotales, partidosJugados, diferenciaPuntos)
+- `GET /api/clasificacion` — lee valores pre-calculados del modelo `Equipo` con `ORDER BY puntosTotales DESC, diferenciaPuntos DESC, puntosFavor DESC` (sin cálculos en memoria)
 - Un partido con resultado (`puntosLocal !== null`) no puede modificarse (PUT) ni eliminarse (DELETE), pero sí permite re-carga de resultado
 
 ### Schemas Zod

@@ -54,7 +54,7 @@ Exit code `0` = todos los assertions OK.
 | 4. Jugadores (CRUD) | con/sin idEquipo, reasignar, desasignar + fallos: idEquipo inexistente, no entero, 404 |
 | 5. Partidos | crea 2 partidos + fallos: local==visitante, equipos inexistentes, fecha/hora mal formateadas, equipo con partidos no se borra (409 RESTRICT) |
 | 6. Resultado | primera carga, re-carga (revierte stats), empate + fallos: puntaje negativo/no entero, partido con resultado no se modifica/borra |
-| 7. Clasificación | público, valida campos esperados y orden por puntos |
+| 7. Clasificación | público, valida campos esperados y orden por puntosTotales |
 
 Convención de nombres:
 - `[OK] METHOD path` — caso feliz, espera 2xx

@@ -114,8 +114,9 @@ El backend sigue una arquitectura MVC estricta: `models/` define las entidades y
 | puntosFavor | INTEGER | Default 0 |
 | puntosEnContra | INTEGER | Default 0 |
 | partidosJugados | INTEGER | Default 0 |
-| puntos | INTEGER | Default 0 |
-| diferencia | INTEGER | Default 0 |
+| puntosTotales | INTEGER | Default 0 |
+| diferenciaPuntos | INTEGER | Default 0 |
+| idLiga | INTEGER | FK → Liga, NOT NULL, ON DELETE RESTRICT |
 
 #### Jugador
 | Campo | Tipo | Restricciones |
@@ -140,6 +141,7 @@ El backend sigue una arquitectura MVC estricta: `models/` define las entidades y
 
 ### Relaciones
 
+- **Liga 1:N Equipo** — FK `idLiga` en Equipo, NOT NULL. RESTRICT: no se puede eliminar una liga con equipos asociados.
 - **Equipo 1:N Jugador** — Si se elimina el equipo, `idEquipo` del jugador se setea en NULL.
 - **Equipo 1:N Partido (Local)** — FK `idLocal`, alias `partidosLocal`. RESTRICT: no se puede eliminar un equipo con partidos asociados.
 - **Equipo 1:N Partido (Visitante)** — FK `idVisitante`, alias `partidosVisitante`. RESTRICT.
@@ -219,14 +221,14 @@ El backend sigue una arquitectura MVC estricta: `models/` define las entidades y
     "posicion": 1,
     "idEquipo": 2,
     "nombre": "Los Tigres",
-    "puntos": 9,
+    "puntosTotales": 9,
     "PJ": 3,
     "PG": 3,
     "PE": 0,
     "PP": 0,
     "tantosFavor": 250,
     "tantosEnContra": 210,
-    "diferencia": 40
+    "diferenciaPuntos": 40
   }
 ]
 ```

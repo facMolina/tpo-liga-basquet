@@ -6,6 +6,10 @@ const Partido = require('./Partido');
 
 // --- Relaciones ---
 
+// Liga 1:N Equipo (ON DELETE RESTRICT)
+Liga.hasMany(Equipo, { foreignKey: 'idLiga', onDelete: 'RESTRICT' });
+Equipo.belongsTo(Liga, { foreignKey: 'idLiga' });
+
 // Equipo 1:N Jugador (ON DELETE SET NULL)
 Equipo.hasMany(Jugador, { foreignKey: 'idEquipo', onDelete: 'SET NULL' });
 Jugador.belongsTo(Equipo, { foreignKey: 'idEquipo' });
