@@ -220,12 +220,15 @@ Usar `POST /api/equipos` como ruta de prueba.
 ### POST /api/partidos (requiere auth)
 | ID | Body | Esperado |
 |----|------|----------|
-| P6 | `{"fecha":"2026-05-01","hora":"18:00","lugar":"Estadio X","idLocal":1,"idVisitante":2}` | 201 + partido con equipos |
+| P6 | `{"fecha":"01/05/2026","hora":"18:00","lugar":"Estadio X","idLocal":1,"idVisitante":2}` | 201 + partido con equipos, response.fecha === "01/05/2026" |
 | P7 | `idLocal == idVisitante` | 400 "no puede jugar contra sí mismo" |
 | P8 | `idLocal` inexistente | 400 "equipo local no existe" |
 | P9 | `idVisitante` inexistente | 400 "equipo visitante no existe" |
 | P10 | `{}` (campos faltantes) | 400 Zod |
-| P11 | `{"fecha":"01/05/2026",...}` (formato incorrecto) | 400 Zod — regex YYYY-MM-DD |
+| P11 | `{"fecha":"2026-05-01",...}` (formato ISO viejo) | 400 Zod — regex DD/MM/AAAA |
+| P11b | `{"fecha":"31/02/2026",...}` (fecha inexistente) | 400 Zod — refine "Fecha inválida" |
+| P11c | `{"fecha":"29/02/2024",...}` (año bisiesto) | 201 |
+| P11d | `{"fecha":"29/02/2025",...}` (año no bisiesto) | 400 Zod — refine "Fecha inválida" |
 | P12 | `{"hora":"6pm",...}` (formato incorrecto) | 400 Zod — regex HH:MM |
 | P13 | Sin auth | 401 |
 

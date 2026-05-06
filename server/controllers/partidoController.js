@@ -2,8 +2,30 @@ const { z } = require('zod');
 const sequelize = require('../config/database');
 const { Partido, Equipo } = require('../models');
 
+const fechaSchema = z
+  .string()
+  .regex(/^(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[012])\/\d{4}$/, {
+    message: 'Formato de fecha inválido (DD/MM/AAAA)',
+  })
+  .refine(
+    (s) => {
+      const [d, m, y] = s.split('/').map(Number);
+      const date = new Date(y, m - 1, d);
+      return (
+        date.getFullYear() === y &&
+        date.getMonth() === m - 1 &&
+        date.getDate() === d
+      );
+    },
+    { message: 'Fecha inválida (no existe en el calendario)' }
+  )
+  .transform((s) => {
+    const [d, m, y] = s.split('/');
+    return `${y}-${m}-${d}`;
+  });
+
 const partidoCreateSchema = z.object({
-  fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'Formato de fecha inválido (YYYY-MM-DD)' }),
+  fecha: fechaSchema,
   hora: z.string().regex(/^\d{2}:\d{2}$/, { message: 'Formato de hora inválido (HH:MM)' }),
   lugar: z.string().min(1, { message: 'El lugar es requerido' }).max(255),
   idLocal: z.number().int().positive({ message: 'idLocal debe ser un entero positivo' }),
@@ -11,7 +33,7 @@ const partidoCreateSchema = z.object({
 }).strict();
 
 const partidoUpdateSchema = z.object({
-  fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'Formato de fecha inválido (YYYY-MM-DD)' }).optional(),
+  fecha: fechaSchema.optional(),
   hora: z.string().regex(/^\d{2}:\d{2}$/, { message: 'Formato de hora inválido (HH:MM)' }).optional(),
   lugar: z.string().min(1, { message: 'El lugar es requerido' }).max(255).optional(),
   idLocal: z.number().int().positive({ message: 'idLocal debe ser un entero positivo' }).optional(),
