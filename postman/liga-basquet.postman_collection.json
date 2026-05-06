@@ -712,7 +712,48 @@
           ]
         },
         {
-          "name": "[OK] DELETE /ligas/:id — borrar (cleanup)",
+          "name": "[OK] POST /ligas — crear throwaway (para test DELETE)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ligas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ligas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"Liga Throwaway Test\",\"temporada\":\"2026\",\"descripcion\":\"Liga descartable para testear DELETE sin afectar la liga principal\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('idLigaThrowaway', pm.response.json().idLiga);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[OK] DELETE /ligas/:id — borrar throwaway (cleanup)",
           "request": {
             "method": "DELETE",
             "header": [
@@ -722,13 +763,13 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/ligas/{{idLiga}}",
+              "raw": "{{baseUrl}}/ligas/{{idLigaThrowaway}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "ligas",
-                "{{idLiga}}"
+                "{{idLigaThrowaway}}"
               ]
             }
           },
@@ -3060,6 +3101,10 @@
     },
     {
       "key": "idLiga",
+      "value": ""
+    },
+    {
+      "key": "idLigaThrowaway",
       "value": ""
     },
     {

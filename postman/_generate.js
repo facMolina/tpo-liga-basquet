@@ -136,7 +136,18 @@ const folderLigas = {
     req({ name: '[FAIL 400] GET /ligas/0 — id cero', method: 'GET', path: ['ligas', '0'], tests: [expectStatus(400)] }),
     req({ name: '[FAIL 404] GET /ligas/99999 — no existe', method: 'GET', path: ['ligas', '99999'], tests: [expectStatus(404)] }),
     req({ name: '[FAIL 404] PUT /ligas/99999 — no existe', method: 'PUT', path: ['ligas', '99999'], headers: [jsonHeader, authHeader], body: body({ nombre: 'X', temporada: '2026' }), tests: [expectStatus(404)] }),
-    req({ name: '[OK] DELETE /ligas/:id — borrar (cleanup)', method: 'DELETE', path: ['ligas', '{{idLiga}}'], headers: [authHeader], tests: [expectStatus(200)] }),
+    req({
+      name: '[OK] POST /ligas — crear throwaway (para test DELETE)',
+      method: 'POST',
+      path: ['ligas'],
+      headers: [jsonHeader, authHeader],
+      body: body({ nombre: 'Liga Throwaway Test', temporada: '2026', descripcion: 'Liga descartable para testear DELETE sin afectar la liga principal' }),
+      tests: [
+        expectStatus(201),
+        `pm.collectionVariables.set('idLigaThrowaway', pm.response.json().idLiga);`,
+      ],
+    }),
+    req({ name: '[OK] DELETE /ligas/:id — borrar throwaway (cleanup)', method: 'DELETE', path: ['ligas', '{{idLigaThrowaway}}'], headers: [authHeader], tests: [expectStatus(200)] }),
   ],
 };
 
@@ -427,6 +438,7 @@ const collection = {
   variable: [
     { key: 'token', value: '' },
     { key: 'idLiga', value: '' },
+    { key: 'idLigaThrowaway', value: '' },
     { key: 'idEquipoLocal', value: '' },
     { key: 'idEquipoVisitante', value: '' },
     { key: 'idEquipoTercero', value: '' },
