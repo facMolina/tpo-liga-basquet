@@ -24,6 +24,18 @@ app.use(cors({
 
 app.use(express.json());
 
+const rateLimit = require('express-rate-limit');
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiadas solicitudes. Intentá de nuevo más tarde.' },
+});
+
+app.use('/api/', apiLimiter);
+
 // Rutas
 const authRoutes = require('./routes/auth');
 const ligaRoutes = require('./routes/liga');

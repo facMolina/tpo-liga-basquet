@@ -1,0 +1,22 @@
+$kind: http-request
+name: "[OK] GET /clasificacion — público, ordenado"
+url: "{{baseUrl}}/clasificacion"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('status 200', () => pm.response.to.have.status(200));
+      pm.test('response es array', () => pm.expect(pm.response.json()).to.be.an('array'));
+      const arr = pm.response.json();
+      if (arr.length > 0) {
+        const item = arr[0];
+        const campos = ['posicion','idEquipo','nombre','puntos','PJ','PG','PE','PP','tantosFavor','tantosEnContra','diferencia'];
+        campos.forEach(c => pm.test('campo ' + c + ' presente', () => pm.expect(item).to.have.property(c)));
+      }
+      pm.test('orden por puntos DESC', () => {
+        for (let i = 1; i < arr.length; i++) {
+          pm.expect(arr[i-1].puntos).to.be.at.least(arr[i].puntos);
+        }
+      });
+    language: text/javascript
+order: 1000

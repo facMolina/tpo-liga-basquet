@@ -7,14 +7,14 @@ Base URL: `http://localhost:3000/api`
 1. MySQL corriendo con DB `liga_basquet` creada
 2. `cd server && npm run seed` ejecutado (crea admin + liga)
 3. `cd server && npm run dev` — servidor corriendo en `localhost:3000`
-4. Thunder Client instalado (extensión VS Code)
-5. Token JWT válido guardado como variable de entorno `{{token}}` en Thunder Client
+4. Postman instalado (extensión VS Code)
+5. Token JWT válido guardado como variable de entorno `{{token}}` en Postman
 
 **Obtener token:**
 ```
 POST http://localhost:3000/api/auth/login
 Body: {"usuario":"admin","password":"adminpassword"}
-→ copiar valor de "token" y setear como variable {{token}} en el entorno de Thunder Client
+→ copiar valor de "token" y setear como variable {{token}} en el entorno de Postman
 ```
 
 ---

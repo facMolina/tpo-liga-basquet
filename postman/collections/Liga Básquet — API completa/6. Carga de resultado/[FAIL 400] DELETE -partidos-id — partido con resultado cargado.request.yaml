@@ -1,0 +1,11 @@
+$kind: http-request
+name: "[FAIL 400] DELETE /partidos/:id — partido con resultado cargado"
+url: "{{baseUrl}}/partidos/{{idPartido}}"
+method: DELETE
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: pm.test('status 400', () => pm.response.to.have.status(400));
+    language: text/javascript
+order: 9000

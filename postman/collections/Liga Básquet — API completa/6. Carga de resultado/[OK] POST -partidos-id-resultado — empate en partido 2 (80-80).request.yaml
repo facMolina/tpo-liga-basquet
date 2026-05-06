@@ -1,0 +1,25 @@
+$kind: http-request
+name: "[OK] POST /partidos/:id/resultado — empate en partido 2 (80-80)"
+url: "{{baseUrl}}/partidos/{{idPartido2}}/resultado"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: json
+  content: "{\r
+
+    \    \"puntosLocal\": 80,\r
+
+    \    \"puntosVisitante\": 80\r
+
+    }"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('status 200', () => pm.response.to.have.status(200));
+      const json = pm.response.json();
+      pm.test('equipoLocal.partidosEmpatados >= 1', () => pm.expect(json.equipoLocal.partidosEmpatados).to.be.at.least(1));
+      pm.test('equipoVisitante.partidosEmpatados >= 1', () => pm.expect(json.equipoVisitante.partidosEmpatados).to.be.at.least(1));
+    language: text/javascript
+order: 3000

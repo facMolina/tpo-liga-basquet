@@ -1,0 +1,14 @@
+$kind: http-request
+name: "[FAIL 401] POST /jugadores — sin token"
+url: "{{baseUrl}}/jugadores"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"nombre":"X","apellido":"Y","categoria":"U20"}'
+scripts:
+  - type: afterResponse
+    code: pm.test('status 401', () => pm.response.to.have.status(401));
+    language: text/javascript
+order: 7000

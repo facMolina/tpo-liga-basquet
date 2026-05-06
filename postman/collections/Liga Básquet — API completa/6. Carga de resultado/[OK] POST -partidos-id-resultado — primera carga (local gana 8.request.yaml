@@ -1,0 +1,26 @@
+$kind: http-request
+name: "[OK] POST /partidos/:id/resultado — primera carga (local gana 85-70)"
+url: "{{baseUrl}}/partidos/{{idPartido}}/resultado"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: json
+  content: "{\r
+
+    \    \"puntosLocal\": 85,\r
+
+    \    \"puntosVisitante\": 70\r
+
+    }"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('status 200', () => pm.response.to.have.status(200));
+      const json = pm.response.json();
+      pm.test('puntosLocal actualizado', () => pm.expect(json.puntosLocal).to.eql(85));
+      pm.test('equipoLocal.partidosGanados >= 1', () => pm.expect(json.equipoLocal.partidosGanados).to.be.at.least(1));
+      pm.test('equipoVisitante.partidosPerdidos >= 1', () => pm.expect(json.equipoVisitante.partidosPerdidos).to.be.at.least(1));
+    language: text/javascript
+order: 1000

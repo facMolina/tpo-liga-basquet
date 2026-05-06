@@ -1,0 +1,26 @@
+$kind: http-request
+name: "[OK] POST /equipos — crear Local (guarda idEquipoLocal)"
+url: "{{baseUrl}}/equipos"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: json
+  content: "{\r
+
+    \    \"nombre\": \"Equipo_test_local_{{$timestamp}}\",\r
+
+    \    \"entrenador\": \"Coach_test_local\"\r
+
+    }"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('status 201', () => pm.response.to.have.status(201));
+      const json = pm.response.json();
+      pm.test('trae idEquipo', () => pm.expect(json.idEquipo).to.be.a('number'));
+      pm.collectionVariables.set('idEquipoLocal', json.idEquipo);
+      pm.collectionVariables.set('nombreEquipoLocal', json.nombre);
+    language: text/javascript
+order: 1000

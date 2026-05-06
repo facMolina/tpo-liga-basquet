@@ -1,0 +1,27 @@
+$kind: http-request
+name: "[FAIL 400] POST /partidos — fecha mal formateada"
+url: "{{baseUrl}}/partidos"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: json
+  content: "{\r
+
+    \    \"fecha\": \"15/05/2026\",\r
+
+    \    \"hora\": \"19:00\",\r
+
+    \    \"lugar\": \"X\",\r
+
+    \    \"idLocal\": {{idEquipoLocal}},\r
+
+    \    \"idVisitante\": {{idEquipoVisitante}}\r
+
+    }"
+scripts:
+  - type: afterResponse
+    code: pm.test('status 400', () => pm.response.to.have.status(400));
+    language: text/javascript
+order: 11000

@@ -1,0 +1,15 @@
+$kind: http-request
+name: "[OK] GET /auth/me — token válido"
+url: "{{baseUrl}}/auth/me"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('status 200', () => pm.response.to.have.status(200));
+      const json = pm.response.json();
+      pm.test('response trae usuario', () => pm.expect(json.usuario).to.be.an('object'));
+      pm.test('usuario.usuario es string', () => pm.expect(json.usuario.usuario).to.be.a('string'));
+    language: text/javascript
+order: 2000

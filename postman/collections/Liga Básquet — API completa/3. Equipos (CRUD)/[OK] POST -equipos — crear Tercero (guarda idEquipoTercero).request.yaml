@@ -1,0 +1,24 @@
+$kind: http-request
+name: "[OK] POST /equipos — crear Tercero (guarda idEquipoTercero)"
+url: "{{baseUrl}}/equipos"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: json
+  content: "{\r
+
+    \    \"nombre\": \"Equipo_test_tercero_{{$timestamp}}\",\r
+
+    \    \"entrenador\": \"Coach_test_tercero\"\r
+
+    }"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('status 201', () => pm.response.to.have.status(201));
+      const json = pm.response.json();
+      pm.collectionVariables.set('idEquipoTercero', json.idEquipo);
+    language: text/javascript
+order: 3000
