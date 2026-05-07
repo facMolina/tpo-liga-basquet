@@ -10,6 +10,35 @@ El servidor se desarrolló en Node.js utilizando Express.js. Esta selección tec
 
 El diseño sigue el patrón de separación por capas: **modelos**, **controladores**, **rutas** y **middleware**. Este enfoque desacopla la lógica de negocio de la capa de transporte HTTP y facilita el mantenimiento del código.
 
+### Diagrama de capas
+
+```mermaid
+flowchart TB
+    Client["Cliente HTTP<br/>(Postman / navegador)"]:::ext
+
+    subgraph Server["Servidor Node.js + Express"]
+        direction TB
+        Routes["Routes<br/>/api/auth · /api/ligas · /api/equipos<br/>/api/jugadores · /api/partidos · /api/clasificacion"]:::layer
+        MW["Middleware<br/>cors · authenticateJWT · validateId · rate-limit"]:::layer
+        Ctrl["Controllers<br/>validación con Zod (.strict) y reglas de negocio"]:::layer
+        Models["Models (Sequelize)<br/>Liga · Usuario · Equipo · Jugador · Partido"]:::layer
+    end
+
+    DB[("MySQL<br/>schema liga_basquet")]:::db
+
+    Client -->|HTTP/JSON| Routes
+    Routes --> MW
+    MW --> Ctrl
+    Ctrl --> Models
+    Models -->|consultas parametrizadas| DB
+
+    classDef ext fill:#eceff1,stroke:#455a64,color:#000
+    classDef layer fill:#e8f5e9,stroke:#2e7d32,color:#000
+    classDef db fill:#fff3e0,stroke:#ef6c00,color:#000
+```
+
+Cada solicitud entrante atraviesa la cadena de **routing → middleware → controller → modelo → base de datos**. Las respuestas regresan por el mismo camino. Esta linealidad simplifica el seguimiento de errores y el testeo manual mediante la colección Postman provista en el repositorio.
+
 ---
 
 ## 2. Seguridad y Autenticación
@@ -59,60 +88,41 @@ El repositorio de datos reside en MySQL. El esquema relacional aplica restriccio
 
 ### Diagramas de Diseño
 
-#### Diagrama Entidad-Relación (DER)
+#### Diagrama Entidad-Relación (DER) — Vista conceptual
+
+El DER expresa el modelo de dominio en notación Chen: las **entidades** se representan como rectángulos, las **relaciones** como rombos y las **cardinalidades** se etiquetan sobre las aristas. La intención de este diagrama es comunicar el modelo lógico, sin comprometerse con tipos de datos ni con la implementación física.
 
 ```mermaid
-erDiagram
-    LIGA ||--o{ EQUIPO : "tiene"
-    EQUIPO ||--o{ JUGADOR : "se compone por"
-    EQUIPO ||--o{ PARTIDO : "juega como Local"
-    EQUIPO ||--o{ PARTIDO : "juega como Visitante"
+flowchart LR
+    LIGA[Liga]:::entity
+    EQUIPO[Equipo]:::entity
+    JUGADOR[Jugador]:::entity
+    PARTIDO[Partido]:::entity
+    USUARIO[Usuario]:::entity
 
-    LIGA {
-        int idLiga PK
-        string nombre
-        string temporada
-        text descripcion
-    }
-    EQUIPO {
-        int idEquipo PK
-        int idLiga FK
-        string nombre
-        string entrenador
-        int partidosGanados
-        int partidosEmpatados
-        int partidosPerdidos
-        int partidosJugados
-        int puntosFavor
-        int puntosEnContra
-        int puntosTotales
-        int diferenciaPuntos
-    }
-    JUGADOR {
-        int idJugador PK
-        int idEquipo FK
-        string nombre
-        string apellido
-        string categoria
-    }
-    PARTIDO {
-        int idPartido PK
-        int idLocal FK
-        int idVisitante FK
-        date fecha
-        time hora
-        string lugar
-        int puntosLocal
-        int puntosVisitante
-    }
-    USUARIO {
-        int idUsuario PK
-        string usuario
-        string password_hash
-    }
+    R1{tiene}:::rel
+    R2{se compone por}:::rel
+    R3{juega como Local}:::rel
+    R4{juega como Visitante}:::rel
+
+    LIGA -- "1" --- R1
+    R1 -- "N" --- EQUIPO
+    EQUIPO -- "1" --- R2
+    R2 -- "N" --- JUGADOR
+    EQUIPO -- "1" --- R3
+    R3 -- "N" --- PARTIDO
+    EQUIPO -- "1" --- R4
+    R4 -- "N" --- PARTIDO
+
+    classDef entity fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#000
+    classDef rel fill:#fff8e1,stroke:#f57c00,stroke-width:2px,color:#000
 ```
 
-#### Modelo Relacional
+La entidad `Usuario` queda fuera del grafo de dominio deportivo: no participa en ninguna relación con las demás entidades, ya que su único propósito es habilitar el control de acceso al área administrativa (autenticación stateless mediante JWT).
+
+#### Modelo Relacional — Vista física
+
+El modelo relacional expresa el esquema tal como existe en MySQL. A diferencia del DER, este diagrama incluye los **tipos SQL exactos**, las **claves primarias** (`PK`) y **foráneas** (`FK`) por columna, y las relaciones se identifican explícitamente por la columna que las implementa.
 
 ```mermaid
 erDiagram
@@ -193,6 +203,48 @@ El cálculo estadístico se ejecuta íntegramente dentro de una transacción de 
 - **Idempotencia y reversión lógica**: cuando el usuario modifica un resultado previamente cargado, el algoritmo primero **resta** las estadísticas derivadas del resultado anterior en los equipos. A continuación, **suma** los valores correspondientes al nuevo resultado. Este enfoque matemático procesa la actualización sin requerir tablas de auditoría intermedias.
 - **Control de errores y rollback**: si ocurre una interrupción de red o una excepción durante el cálculo, el servidor lanza la instrucción `ROLLBACK`. La transacción deshace todos los cambios pendientes y la base de datos retorna a su estado inicial seguro. Únicamente tras el éxito de la secuencia completa se ejecuta la instrucción `COMMIT`.
 
+### Diagrama de secuencia — `POST /api/partidos/:id/resultado`
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Admin as Administrador
+    participant API as Express Router
+    participant Auth as Middleware JWT
+    participant Ctrl as partidoController
+    participant DB as MySQL
+
+    Admin->>API: POST /api/partidos/:id/resultado<br/>{puntosLocal, puntosVisitante}
+    API->>Auth: verificar Bearer token
+    Auth-->>API: req.user inyectado
+    API->>Ctrl: cargarResultado(req)
+    Ctrl->>Ctrl: Zod .strict() valida payload
+
+    Ctrl->>DB: BEGIN TRANSACTION
+    Ctrl->>DB: SELECT partido FOR UPDATE
+    DB-->>Ctrl: partido bloqueado
+    Ctrl->>DB: SELECT equipoLocal FOR UPDATE
+    Ctrl->>DB: SELECT equipoVisitante FOR UPDATE
+    DB-->>Ctrl: equipos bloqueados
+
+    alt resultado anterior existe (re-carga)
+        Ctrl->>DB: UPDATE equipos (revertir stats anteriores)
+    end
+
+    Ctrl->>DB: UPDATE partido (nuevos puntos)
+    Ctrl->>DB: UPDATE equipos (sumar nuevas stats)
+
+    alt error en cualquier paso
+        Ctrl->>DB: ROLLBACK
+        Ctrl-->>Admin: 500 — estado inalterado
+    else éxito
+        Ctrl->>DB: COMMIT
+        Ctrl-->>Admin: 200 — partido + stats actualizadas
+    end
+```
+
+El diagrama anterior consolida visualmente las tres garantías técnicas de la sección: **bloqueo exclusivo** (pasos 7 a 10), **reversión idempotente** (paso 11, condicional), y **rollback ante fallas** (rama de error tras los UPDATEs).
+
 ---
 
 ## 5. Configuración y Despliegue del Entorno
@@ -206,7 +258,7 @@ El cálculo estadístico se ejecuta íntegramente dentro de una transacción de 
 
 1. Acceder al directorio del servidor (`/server`).
 2. Descargar dependencias ejecutando `npm install`.
-3. Proveer un archivo de variables de entorno `.env` con las credenciales de conexión a MySQL y el secreto criptográfico para JWT.
+3. Copiar la plantilla `cp .env.example .env` y completar los valores requeridos (credenciales MySQL y `JWT_SECRET`). El archivo `.env.example` versionado en el repositorio documenta cada variable junto a su rol y valor por defecto.
 4. Ejecutar el comando de poblamiento inicial mediante `npm run seed`.
 5. Levantar el servicio en entorno de desarrollo mediante `npm run dev`.
 
@@ -243,3 +295,136 @@ El script de inicialización provee una base de datos preconfigurada para valida
 El conjunto resultante habilita la ejecución manual de pruebas sobre los endpoints de actualización de resultados (`POST /api/partidos/:id/resultado`), facilitando la verificación del comportamiento atómico de las transacciones documentadas en la sección 4.
 
 Si la liga ya existe al momento de ejecutar el seed, el script detecta la condición y omite la creación de equipos y jugadores para preservar la idempotencia.
+
+---
+
+## 7. Credenciales de Prueba
+
+Las credenciales del usuario administrador se generan automáticamente al ejecutar `npm run seed`. Si las variables `ADMIN_USER` y `ADMIN_PASSWORD` no están definidas en el archivo `.env`, el script aplica los siguientes valores por defecto y emite una advertencia por consola:
+
+| Campo | Valor por defecto |
+|-------|-------------------|
+| Usuario | `admin` |
+| Contraseña | `adminpassword` |
+
+> **Nota de seguridad**: estas credenciales están pensadas exclusivamente para el entorno de evaluación. En un despliegue productivo deben sobrescribirse mediante variables de entorno con valores no triviales antes de ejecutar el seed.
+
+El endpoint de autenticación es `POST /api/auth/login` y devuelve un JWT con vigencia de doce horas. El token debe incluirse en el header `Authorization: Bearer <token>` para todas las operaciones de escritura sobre los recursos protegidos.
+
+---
+
+## 8. Manual de Uso de la API
+
+A continuación se describe el flujo end-to-end típico para verificar la API. Cada paso indica el método HTTP, la ruta, la autorización requerida y un ejemplo de payload.
+
+### Paso 1 — Verificar disponibilidad
+
+```http
+GET /api/health
+```
+
+Respuesta esperada `200 OK`:
+```json
+{ "status": "OK", "message": "Backend funcionando correctamente" }
+```
+
+### Paso 2 — Login del administrador
+
+```http
+POST /api/auth/login
+Content-Type: application/json
+
+{ "usuario": "admin", "password": "adminpassword" }
+```
+
+Respuesta esperada `200 OK`. Guardar el campo `token` para los pasos siguientes.
+
+### Paso 3 — Crear una liga
+
+```http
+POST /api/ligas
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{ "nombre": "Liga TPO", "temporada": "1C 2026", "descripcion": "Liga de prueba" }
+```
+
+Respuesta `201 Created`. Guardar el campo `idLiga`.
+
+### Paso 4 — Crear dos equipos
+
+```http
+POST /api/equipos
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{ "nombre": "Halcones", "entrenador": "C. Méndez", "idLiga": 1 }
+```
+
+Repetir para un segundo equipo. Guardar `idEquipo` de cada uno.
+
+### Paso 5 — Asociar jugadores a un equipo
+
+```http
+POST /api/jugadores
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{ "nombre": "Lucas", "apellido": "García", "categoria": "Juvenil", "idEquipo": 1 }
+```
+
+### Paso 6 — Programar un partido
+
+```http
+POST /api/partidos
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "fecha": "2026-05-15",
+  "hora": "19:00",
+  "lugar": "Estadio Central",
+  "idLocal": 1,
+  "idVisitante": 2
+}
+```
+
+Respuesta `201 Created`. Guardar `idPartido`.
+
+### Paso 7 — Cargar el resultado
+
+```http
+POST /api/partidos/1/resultado
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{ "puntosLocal": 85, "puntosVisitante": 72 }
+```
+
+Respuesta `200 OK` con el partido actualizado y las estadísticas recalculadas de ambos equipos.
+
+### Paso 8 — Consultar la clasificación (público)
+
+```http
+GET /api/clasificacion
+```
+
+Respuesta `200 OK`: arreglo ordenado por `puntosTotales` descendente, con desempate por `diferenciaPuntos` y luego por `tantosFavor`.
+
+### Paso 9 — Consultar el detalle de un equipo (público)
+
+```http
+GET /api/equipos/1
+```
+
+Respuesta `200 OK` con los datos del equipo, su lista de jugadores asociados (`Jugadors`) y los partidos en los que participa como local (`partidosLocal`) y visitante (`partidosVisitante`).
+
+### Re-carga de resultado
+
+Si se invoca `POST /api/partidos/:id/resultado` sobre un partido que **ya tiene resultado cargado**, el sistema revierte automáticamente las estadísticas anteriores antes de aplicar las nuevas, dentro de una única transacción. El campo `partidosJugados` no se incrementa, ya que se considera el mismo encuentro. Esta operación está documentada en detalle en la sección 4 con su correspondiente diagrama de secuencia.
+
+---
+
+## 9. Alcance de la Documentación
+
+El presente documento describe exclusivamente la capa de servidor del sistema (backend HTTP, lógica de dominio, persistencia y seguridad). La capa de presentación se consume mediante clientes HTTP genéricos —por ejemplo, la colección Postman versionada en el directorio `postman/` del repositorio—, lo cual permite ejercitar y validar la totalidad de los endpoints expuestos por la API.
