@@ -315,8 +315,3 @@ Respuesta `200 OK` con la siguiente estructura:
 
 Si se invoca `POST /api/partidos/:id/resultado` sobre un partido que **ya tiene resultado cargado**, el sistema revierte automáticamente las estadísticas anteriores antes de aplicar las nuevas, dentro de una única transacción. El campo `partidosJugados` no se incrementa, ya que se considera el mismo encuentro. Esta operación está documentada en detalle en la sección 4 con su correspondiente diagrama de secuencia.
 
----
-
-## 9. Alcance de la Documentación
-
-El presente documento describe exclusivamente la capa de servidor del sistema (backend HTTP, lógica de dominio, persistencia y seguridad). La capa de presentación se consume mediante clientes HTTP genéricos —por ejemplo, la colección Postman versionada en el directorio `postman/` del repositorio—, lo cual permite ejercitar y validar la totalidad de los endpoints expuestos por la API.
