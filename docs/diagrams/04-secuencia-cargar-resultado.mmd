@@ -1,0 +1,35 @@
+sequenceDiagram
+    autonumber
+    actor Admin as Administrador
+    participant API as Express Router
+    participant Auth as Middleware JWT
+    participant Ctrl as partidoController
+    participant DB as MySQL
+
+    Admin->>API: POST /api/partidos/:id/resultado<br/>{puntosLocal, puntosVisitante}
+    API->>Auth: verificar Bearer token
+    Auth-->>API: req.user inyectado
+    API->>Ctrl: cargarResultado(req)
+    Ctrl->>Ctrl: Zod .strict() valida payload
+
+    Ctrl->>DB: BEGIN TRANSACTION
+    Ctrl->>DB: SELECT partido FOR UPDATE
+    DB-->>Ctrl: partido bloqueado
+    Ctrl->>DB: SELECT equipoLocal FOR UPDATE
+    Ctrl->>DB: SELECT equipoVisitante FOR UPDATE
+    DB-->>Ctrl: equipos bloqueados
+
+    alt resultado anterior existe (re-carga)
+        Ctrl->>DB: UPDATE equipos (revertir stats anteriores)
+    end
+
+    Ctrl->>DB: UPDATE partido (nuevos puntos)
+    Ctrl->>DB: UPDATE equipos (sumar nuevas stats)
+
+    alt error en cualquier paso
+        Ctrl->>DB: ROLLBACK
+        Ctrl-->>Admin: 500 — estado inalterado
+    else éxito
+        Ctrl->>DB: COMMIT
+        Ctrl-->>Admin: 200 — partido + stats actualizadas
+    end

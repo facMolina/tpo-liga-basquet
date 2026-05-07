@@ -12,30 +12,7 @@ El diseño sigue el patrón de separación por capas: **modelos**, **controlador
 
 ### Diagrama de capas
 
-```mermaid
-flowchart TB
-    Client["Cliente HTTP<br/>(Postman / navegador)"]:::ext
-
-    subgraph Server["Servidor Node.js + Express"]
-        direction TB
-        Routes["Routes<br/>/api/auth · /api/ligas · /api/equipos<br/>/api/jugadores · /api/partidos · /api/clasificacion"]:::layer
-        MW["Middleware<br/>cors · authenticateJWT · validateId · rate-limit"]:::layer
-        Ctrl["Controllers<br/>validación con Zod (.strict) y reglas de negocio"]:::layer
-        Models["Models (Sequelize)<br/>Liga · Usuario · Equipo · Jugador · Partido"]:::layer
-    end
-
-    DB[("MySQL<br/>schema liga_basquet")]:::db
-
-    Client -->|HTTP/JSON| Routes
-    Routes --> MW
-    MW --> Ctrl
-    Ctrl --> Models
-    Models -->|consultas parametrizadas| DB
-
-    classDef ext fill:#eceff1,stroke:#455a64,color:#000
-    classDef layer fill:#e8f5e9,stroke:#2e7d32,color:#000
-    classDef db fill:#fff3e0,stroke:#ef6c00,color:#000
-```
+![Diagrama de capas del backend](docs/diagrams/01-arquitectura-capas.png)
 
 Cada solicitud entrante atraviesa la cadena de **routing → middleware → controller → modelo → base de datos**. Las respuestas regresan por el mismo camino. Esta linealidad simplifica el seguimiento de errores y el testeo manual mediante la colección Postman provista en el repositorio.
 
@@ -92,31 +69,7 @@ El repositorio de datos reside en MySQL. El esquema relacional aplica restriccio
 
 El DER expresa el modelo de dominio en notación Chen: las **entidades** se representan como rectángulos, las **relaciones** como rombos y las **cardinalidades** se etiquetan sobre las aristas. La intención de este diagrama es comunicar el modelo lógico, sin comprometerse con tipos de datos ni con la implementación física.
 
-```mermaid
-flowchart LR
-    LIGA[Liga]:::entity
-    EQUIPO[Equipo]:::entity
-    JUGADOR[Jugador]:::entity
-    PARTIDO[Partido]:::entity
-    USUARIO[Usuario]:::entity
-
-    R1{tiene}:::rel
-    R2{se compone por}:::rel
-    R3{juega como Local}:::rel
-    R4{juega como Visitante}:::rel
-
-    LIGA -- "1" --- R1
-    R1 -- "N" --- EQUIPO
-    EQUIPO -- "1" --- R2
-    R2 -- "N" --- JUGADOR
-    EQUIPO -- "1" --- R3
-    R3 -- "N" --- PARTIDO
-    EQUIPO -- "1" --- R4
-    R4 -- "N" --- PARTIDO
-
-    classDef entity fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#000
-    classDef rel fill:#fff8e1,stroke:#f57c00,stroke-width:2px,color:#000
-```
+![Diagrama Entidad-Relación (DER)](docs/diagrams/02-der.png)
 
 La entidad `Usuario` queda fuera del grafo de dominio deportivo: no participa en ninguna relación con las demás entidades, ya que su único propósito es habilitar el control de acceso al área administrativa (autenticación stateless mediante JWT).
 
@@ -124,55 +77,7 @@ La entidad `Usuario` queda fuera del grafo de dominio deportivo: no participa en
 
 El modelo relacional expresa el esquema tal como existe en MySQL. A diferencia del DER, este diagrama incluye los **tipos SQL exactos**, las **claves primarias** (`PK`) y **foráneas** (`FK`) por columna, y las relaciones se identifican explícitamente por la columna que las implementa.
 
-```mermaid
-erDiagram
-    ligas ||--o{ equipos : idLiga
-    equipos ||--o{ jugadores : idEquipo
-    equipos ||--o{ partidos : "idLocal / idVisitante"
-
-    ligas {
-        INTEGER idLiga PK
-        VARCHAR nombre
-        VARCHAR temporada
-        TEXT descripcion
-    }
-    equipos {
-        INTEGER idEquipo PK
-        INTEGER idLiga FK
-        VARCHAR nombre
-        VARCHAR entrenador
-        INTEGER partidosGanados
-        INTEGER partidosEmpatados
-        INTEGER partidosPerdidos
-        INTEGER partidosJugados
-        INTEGER puntosFavor
-        INTEGER puntosEnContra
-        INTEGER puntosTotales
-        INTEGER diferenciaPuntos
-    }
-    jugadores {
-        INTEGER idJugador PK
-        INTEGER idEquipo FK
-        VARCHAR nombre
-        VARCHAR apellido
-        VARCHAR categoria
-    }
-    partidos {
-        INTEGER idPartido PK
-        INTEGER idLocal FK
-        INTEGER idVisitante FK
-        DATE fecha
-        TIME hora
-        VARCHAR lugar
-        INTEGER puntosLocal
-        INTEGER puntosVisitante
-    }
-    usuarios {
-        INTEGER idUsuario PK
-        VARCHAR usuario
-        VARCHAR password_hash
-    }
-```
+![Modelo Relacional](docs/diagrams/03-modelo-relacional.png)
 
 ---
 
@@ -205,43 +110,7 @@ El cálculo estadístico se ejecuta íntegramente dentro de una transacción de 
 
 ### Diagrama de secuencia — `POST /api/partidos/:id/resultado`
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Admin as Administrador
-    participant API as Express Router
-    participant Auth as Middleware JWT
-    participant Ctrl as partidoController
-    participant DB as MySQL
-
-    Admin->>API: POST /api/partidos/:id/resultado<br/>{puntosLocal, puntosVisitante}
-    API->>Auth: verificar Bearer token
-    Auth-->>API: req.user inyectado
-    API->>Ctrl: cargarResultado(req)
-    Ctrl->>Ctrl: Zod .strict() valida payload
-
-    Ctrl->>DB: BEGIN TRANSACTION
-    Ctrl->>DB: SELECT partido FOR UPDATE
-    DB-->>Ctrl: partido bloqueado
-    Ctrl->>DB: SELECT equipoLocal FOR UPDATE
-    Ctrl->>DB: SELECT equipoVisitante FOR UPDATE
-    DB-->>Ctrl: equipos bloqueados
-
-    alt resultado anterior existe (re-carga)
-        Ctrl->>DB: UPDATE equipos (revertir stats anteriores)
-    end
-
-    Ctrl->>DB: UPDATE partido (nuevos puntos)
-    Ctrl->>DB: UPDATE equipos (sumar nuevas stats)
-
-    alt error en cualquier paso
-        Ctrl->>DB: ROLLBACK
-        Ctrl-->>Admin: 500 — estado inalterado
-    else éxito
-        Ctrl->>DB: COMMIT
-        Ctrl-->>Admin: 200 — partido + stats actualizadas
-    end
-```
+![Diagrama de secuencia de carga de resultado](docs/diagrams/04-secuencia-cargar-resultado.png)
 
 El diagrama anterior consolida visualmente las tres garantías técnicas de la sección: **bloqueo exclusivo** (pasos 7 a 10), **reversión idempotente** (paso 11, condicional), y **rollback ante fallas** (rama de error tras los UPDATEs).
 
