@@ -394,6 +394,7 @@ const folderPartidos = {
     req({ name: '[FAIL 404] PUT /partidos/99999 — no existe', method: 'PUT', path: ['partidos', '99999'], headers: [jsonHeader, authHeader], body: body({ lugar: 'X' }), tests: [expectStatus(404)] }),
     req({ name: '[FAIL 404] DELETE /partidos/99999 — no existe', method: 'DELETE', path: ['partidos', '99999'], headers: [authHeader], tests: [expectStatus(404)] }),
     req({ name: '[FAIL 409] DELETE /equipos/:id — equipo con partidos asociados (RESTRICT)', method: 'DELETE', path: ['equipos', '{{idEquipoLocal}}'], headers: [authHeader], tests: [expectStatus(409)] }),
+    req({ name: '[FAIL 409] DELETE /ligas/:id — liga con equipos asociados (RESTRICT)', method: 'DELETE', path: ['ligas', '{{idLiga}}'], headers: [authHeader], tests: [expectStatus(409)] }),
   ],
 };
 

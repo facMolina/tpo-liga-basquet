@@ -66,7 +66,7 @@ async function seed() {
 
     for (const data of equiposData) {
       const [equipo, equipoCreated] = await Equipo.findOrCreate({
-        where: { nombre: data.nombre },
+        where: { nombre: data.nombre, idLiga: liga.idLiga },
         defaults: { nombre: data.nombre, entrenador: data.entrenador, idLiga: liga.idLiga },
       });
       console.log(equipoCreated ? `Equipo creado: ${equipo.nombre}` : `Equipo ya existía: ${equipo.nombre}`);

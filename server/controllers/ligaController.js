@@ -79,6 +79,11 @@ const destroy = async (req, res) => {
     await liga.destroy();
     res.json({ message: 'Liga eliminada correctamente' });
   } catch (error) {
+    if (error.name === 'SequelizeForeignKeyConstraintError') {
+      return res.status(409).json({
+        error: 'No se puede eliminar la liga: tiene equipos asociados. Eliminá los equipos primero.',
+      });
+    }
     console.error('Error al eliminar liga:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
   }

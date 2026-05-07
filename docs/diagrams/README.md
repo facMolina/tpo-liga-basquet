@@ -14,7 +14,7 @@ Esta carpeta contiene los diagramas que se referencian desde `documentacion-tecn
 
 ## Cómo regenerar los PNG
 
-Requiere [`@mermaid-js/mermaid-cli`](https://github.com/mermaid-js/mermaid-cli) (proporciona el binario `mmdc`).
+Requiere el paquete `@mermaid-js/mermaid-cli` (proporciona el binario `mmdc`).
 
 ```bash
 npm install -g @mermaid-js/mermaid-cli

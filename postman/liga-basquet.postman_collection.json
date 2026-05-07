@@ -2843,6 +2843,39 @@
               }
             }
           ]
+        },
+        {
+          "name": "[FAIL 409] DELETE /ligas/:id — liga con equipos asociados (RESTRICT)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ligas/{{idLiga}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ligas",
+                "{{idLiga}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
         }
       ]
     },

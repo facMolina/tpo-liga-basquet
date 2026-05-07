@@ -131,6 +131,8 @@ El diagrama anterior consolida visualmente las tres garantías técnicas de la s
 4. Ejecutar el comando de poblamiento inicial mediante `npm run seed`.
 5. Levantar el servicio en entorno de desarrollo mediante `npm run dev`.
 
+> **Nota sobre el esquema de base de datos**: la sincronización al levantar el servidor se realiza con `sequelize.sync()`. Esta operación crea las tablas faltantes pero **no aplica cambios estructurales sobre tablas existentes** (renombrado de columnas, alteración de claves foráneas, etc.). Si la instancia de MySQL ya contiene un esquema generado por una versión anterior del proyecto, debe recrearse el schema antes de iniciar (`DROP DATABASE liga_basquet; CREATE DATABASE liga_basquet;`) para que el modelo actual quede reflejado correctamente.
+
 ### Variables de Entorno Críticas
 
 | Variable | Descripción | Default |
@@ -163,7 +165,7 @@ El script de inicialización provee una base de datos preconfigurada para valida
 
 El conjunto resultante habilita la ejecución manual de pruebas sobre los endpoints de actualización de resultados (`POST /api/partidos/:id/resultado`), facilitando la verificación del comportamiento atómico de las transacciones documentadas en la sección 4.
 
-Si la liga ya existe al momento de ejecutar el seed, el script detecta la condición y omite la creación de equipos y jugadores para preservar la idempotencia.
+El script es **idempotente**: utiliza `findOrCreate` para liga, equipos y jugadores, identificando cada equipo por la combinación `(nombre, idLiga)` y cada jugador por `(nombre, apellido, idEquipo)`. Si el seed se ejecuta más de una vez sobre la misma base, no se duplican registros y la información preexistente queda intacta.
 
 ---
 
