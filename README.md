@@ -185,7 +185,7 @@ El backend sigue una arquitectura MVC estricta: `models/` define las entidades y
 | Método | Ruta | Auth | Descripción |
 |--------|------|------|-------------|
 | GET | `/api/equipos` | No | Listar todos los equipos |
-| GET | `/api/equipos/:id` | No | Vista detallada: equipo con jugadores y partidos |
+| GET | `/api/equipos/:id` | No | Vista detallada: equipo con `Jugadors`, `partidosLocal`, `partidosVisitante`, `partidosJugados` y `partidosPendientes` (estos dos últimos combinan ambas condiciones, cada partido marcado con `condicion: "Local"\|"Visitante"`) |
 | POST | `/api/equipos` | Sí | Crear equipo |
 | PUT | `/api/equipos/:id` | Sí | Actualizar nombre/entrenador |
 | DELETE | `/api/equipos/:id` | Sí | Eliminar equipo (falla si tiene partidos) |
@@ -204,7 +204,7 @@ El backend sigue una arquitectura MVC estricta: `models/` define las entidades y
 
 | Método | Ruta | Auth | Descripción |
 |--------|------|------|-------------|
-| GET | `/api/partidos` | No | Listar todos los partidos con equipos |
+| GET | `/api/partidos` | No | Listar partidos ordenados por fecha. Acepta query opcionales: `?estado=pendiente\|jugado`, `?desde=YYYY-MM-DD`, `?hasta=YYYY-MM-DD` (combinables) |
 | GET | `/api/partidos/:id` | No | Obtener partido por ID |
 | POST | `/api/partidos` | Sí | Programar partido (fecha, hora, lugar, equipos) |
 | PUT | `/api/partidos/:id` | Sí | Editar partido (solo si no tiene resultado) |

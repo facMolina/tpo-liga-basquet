@@ -971,9 +971,12 @@
                 "exec": [
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
                   "const json = pm.response.json();",
+                  "pm.test('entrenador presente', () => pm.expect(json.entrenador).to.be.a('string'));",
                   "pm.test('Jugadors es array', () => pm.expect(json.Jugadors).to.be.an('array'));",
                   "pm.test('partidosLocal es array', () => pm.expect(json.partidosLocal).to.be.an('array'));",
-                  "pm.test('partidosVisitante es array', () => pm.expect(json.partidosVisitante).to.be.an('array'));"
+                  "pm.test('partidosVisitante es array', () => pm.expect(json.partidosVisitante).to.be.an('array'));",
+                  "pm.test('partidosJugados es array', () => pm.expect(json.partidosJugados).to.be.an('array'));",
+                  "pm.test('partidosPendientes es array', () => pm.expect(json.partidosPendientes).to.be.an('array'));"
                 ]
               }
             }
@@ -2124,6 +2127,180 @@
                   "pm.test('response es array', () => pm.expect(pm.response.json()).to.be.an('array'));",
                   "const arr = pm.response.json();",
                   "if (arr.length > 0) { pm.test('trae equipoLocal embebido', () => pm.expect(arr[0]).to.have.property('equipoLocal')); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[OK] GET /partidos?estado=pendiente — filtro calendario (pendientes)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/partidos?estado=pendiente",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos"
+              ],
+              "query": [
+                {
+                  "key": "estado",
+                  "value": "pendiente"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const arr = pm.response.json();",
+                  "pm.test('todos sin resultado', () => arr.forEach(p => pm.expect(p.puntosLocal).to.be.null));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[OK] GET /partidos?estado=jugado — filtro calendario (jugados)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/partidos?estado=jugado",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos"
+              ],
+              "query": [
+                {
+                  "key": "estado",
+                  "value": "jugado"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const arr = pm.response.json();",
+                  "pm.test('todos con resultado', () => arr.forEach(p => pm.expect(p.puntosLocal).to.not.be.null));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[OK] GET /partidos?desde=...&hasta=... — filtro calendario por rango",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/partidos?desde=2026-01-01&hasta=2026-12-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2026-01-01"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-12-31"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('response es array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 400] GET /partidos?estado=invalido — query inválida",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/partidos?estado=invalido",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos"
+              ],
+              "query": [
+                {
+                  "key": "estado",
+                  "value": "invalido"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[FAIL 400] GET /partidos?desde=mal — fecha mal formateada",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/partidos?desde=01-01-2026",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "partidos"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "01-01-2026"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
                 ]
               }
             }

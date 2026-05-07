@@ -7,8 +7,11 @@ scripts:
     code: |-
       pm.test('status 200', () => pm.response.to.have.status(200));
       const json = pm.response.json();
+      pm.test('entrenador presente', () => pm.expect(json.entrenador).to.be.a('string'));
       pm.test('Jugadors es array', () => pm.expect(json.Jugadors).to.be.an('array'));
       pm.test('partidosLocal es array', () => pm.expect(json.partidosLocal).to.be.an('array'));
       pm.test('partidosVisitante es array', () => pm.expect(json.partidosVisitante).to.be.an('array'));
+      pm.test('partidosJugados es array', () => pm.expect(json.partidosJugados).to.be.an('array'));
+      pm.test('partidosPendientes es array', () => pm.expect(json.partidosPendientes).to.be.an('array'));
     language: text/javascript
 order: 5000

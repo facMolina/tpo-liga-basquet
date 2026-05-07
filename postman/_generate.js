@@ -5,11 +5,26 @@
 const fs = require('fs');
 const path = require('path');
 
-const url = (segments) => ({
-  raw: '{{baseUrl}}/' + segments.join('/'),
-  host: ['{{baseUrl}}'],
-  path: segments,
-});
+const url = (segments) => {
+  let query = null;
+  let segs = [...segments];
+  const last = segs[segs.length - 1];
+  if (typeof last === 'string' && last.includes('?')) {
+    const idx = last.indexOf('?');
+    const qStr = last.slice(idx + 1);
+    segs[segs.length - 1] = last.slice(0, idx);
+    query = qStr.split('&').map((pair) => {
+      const [key, value = ''] = pair.split('=');
+      return { key, value };
+    });
+  }
+  return {
+    raw: '{{baseUrl}}/' + segs.join('/') + (query ? '?' + query.map((p) => `${p.key}=${p.value}`).join('&') : ''),
+    host: ['{{baseUrl}}'],
+    path: segs,
+    ...(query ? { query } : {}),
+  };
+};
 
 const jsonHeader = { key: 'Content-Type', value: 'application/json' };
 const authHeader = { key: 'Authorization', value: 'Bearer {{token}}' };
@@ -201,9 +216,12 @@ const folderEquipos = {
       tests: [
         expectStatus(200),
         `const json = pm.response.json();`,
+        `pm.test('entrenador presente', () => pm.expect(json.entrenador).to.be.a('string'));`,
         `pm.test('Jugadors es array', () => pm.expect(json.Jugadors).to.be.an('array'));`,
         `pm.test('partidosLocal es array', () => pm.expect(json.partidosLocal).to.be.an('array'));`,
         `pm.test('partidosVisitante es array', () => pm.expect(json.partidosVisitante).to.be.an('array'));`,
+        `pm.test('partidosJugados es array', () => pm.expect(json.partidosJugados).to.be.an('array'));`,
+        `pm.test('partidosPendientes es array', () => pm.expect(json.partidosPendientes).to.be.an('array'));`,
       ],
     }),
     req({
@@ -311,6 +329,37 @@ const folderPartidos = {
         `if (arr.length > 0) { pm.test('trae equipoLocal embebido', () => pm.expect(arr[0]).to.have.property('equipoLocal')); }`,
       ],
     }),
+    req({
+      name: '[OK] GET /partidos?estado=pendiente — filtro calendario (pendientes)',
+      method: 'GET',
+      path: ['partidos?estado=pendiente'],
+      tests: [
+        expectStatus(200),
+        `const arr = pm.response.json();`,
+        `pm.test('todos sin resultado', () => arr.forEach(p => pm.expect(p.puntosLocal).to.be.null));`,
+      ],
+    }),
+    req({
+      name: '[OK] GET /partidos?estado=jugado — filtro calendario (jugados)',
+      method: 'GET',
+      path: ['partidos?estado=jugado'],
+      tests: [
+        expectStatus(200),
+        `const arr = pm.response.json();`,
+        `pm.test('todos con resultado', () => arr.forEach(p => pm.expect(p.puntosLocal).to.not.be.null));`,
+      ],
+    }),
+    req({
+      name: '[OK] GET /partidos?desde=...&hasta=... — filtro calendario por rango',
+      method: 'GET',
+      path: ['partidos?desde=2026-01-01&hasta=2026-12-31'],
+      tests: [
+        expectStatus(200),
+        expectArrayResponse,
+      ],
+    }),
+    req({ name: '[FAIL 400] GET /partidos?estado=invalido — query inválida', method: 'GET', path: ['partidos?estado=invalido'], tests: [expectStatus(400)] }),
+    req({ name: '[FAIL 400] GET /partidos?desde=mal — fecha mal formateada', method: 'GET', path: ['partidos?desde=01-01-2026'], tests: [expectStatus(400)] }),
     req({
       name: '[OK] GET /partidos/:id',
       method: 'GET',

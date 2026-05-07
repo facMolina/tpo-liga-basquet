@@ -44,7 +44,14 @@ const getById = async (req, res) => {
     if (!equipo) {
       return res.status(404).json({ error: 'Equipo no encontrado' });
     }
-    res.json(equipo);
+    const e = equipo.toJSON();
+    const todos = [
+      ...(e.partidosLocal || []).map((p) => ({ ...p, condicion: 'Local' })),
+      ...(e.partidosVisitante || []).map((p) => ({ ...p, condicion: 'Visitante' })),
+    ].sort((a, b) => (a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : 0));
+    e.partidosJugados = todos.filter((p) => p.puntosLocal !== null);
+    e.partidosPendientes = todos.filter((p) => p.puntosLocal === null);
+    res.json(e);
   } catch (error) {
     console.error('Error al obtener equipo:', error);
     res.status(500).json({ error: 'Error interno del servidor' });

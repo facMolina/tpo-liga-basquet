@@ -1,6 +1,13 @@
 const { z } = require('zod');
+const { Op } = require('sequelize');
 const sequelize = require('../config/database');
 const { Partido, Equipo } = require('../models');
+
+const partidoQuerySchema = z.object({
+  estado: z.enum(['pendiente', 'jugado']).optional(),
+  desde: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'desde debe tener formato YYYY-MM-DD' }).optional(),
+  hasta: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'hasta debe tener formato YYYY-MM-DD' }).optional(),
+}).strict();
 
 const partidoCreateSchema = z.object({
   fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'Formato de fecha inválido (YYYY-MM-DD)' }),
@@ -29,8 +36,27 @@ const include = [
 ];
 
 const getAll = async (req, res) => {
+  const validation = partidoQuerySchema.safeParse(req.query);
+  if (!validation.success) {
+    return res.status(400).json({ errors: validation.error.errors });
+  }
+
+  const { estado, desde, hasta } = validation.data;
+  const where = {};
+  if (estado === 'pendiente') where.puntosLocal = { [Op.is]: null };
+  if (estado === 'jugado') where.puntosLocal = { [Op.not]: null };
+  if (desde || hasta) {
+    where.fecha = {};
+    if (desde) where.fecha[Op.gte] = desde;
+    if (hasta) where.fecha[Op.lte] = hasta;
+  }
+
   try {
-    const partidos = await Partido.findAll({ include });
+    const partidos = await Partido.findAll({
+      include,
+      where,
+      order: [['fecha', 'ASC'], ['hora', 'ASC']],
+    });
     res.json(partidos);
   } catch (error) {
     console.error('Error al obtener partidos:', error);

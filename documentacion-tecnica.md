@@ -411,13 +411,36 @@ GET /api/clasificacion
 
 Respuesta `200 OK`: arreglo ordenado por `puntosTotales` descendente, con desempate por `diferenciaPuntos` y luego por `tantosFavor`.
 
-### Paso 9 — Consultar el detalle de un equipo (público)
+### Paso 9 — Consultar el calendario filtrado (público)
+
+```http
+GET /api/partidos?estado=pendiente
+GET /api/partidos?estado=jugado
+GET /api/partidos?desde=2026-05-01&hasta=2026-05-31
+```
+
+El endpoint `/api/partidos` acepta tres parámetros opcionales y combinables:
+
+| Query | Valores válidos | Descripción |
+|-------|-----------------|-------------|
+| `estado` | `pendiente` \| `jugado` | Filtra partidos sin resultado (`pendiente`) o con resultado cargado (`jugado`). |
+| `desde` | `YYYY-MM-DD` | Cota inferior de fecha (inclusiva). |
+| `hasta` | `YYYY-MM-DD` | Cota superior de fecha (inclusiva). |
+
+El listado se ordena cronológicamente por `fecha` y, dentro de la misma fecha, por `hora`. Cualquier valor inválido en estos parámetros provoca una respuesta `400 Bad Request` con el detalle del error de validación de Zod.
+
+### Paso 10 — Consultar el detalle de un equipo (público)
 
 ```http
 GET /api/equipos/1
 ```
 
-Respuesta `200 OK` con los datos del equipo, su lista de jugadores asociados (`Jugadors`) y los partidos en los que participa como local (`partidosLocal`) y visitante (`partidosVisitante`).
+Respuesta `200 OK` con la siguiente estructura:
+
+- Datos del equipo (`nombre`, `entrenador`, estadísticas acumuladas `puntosTotales`, `diferenciaPuntos`, etc.).
+- `Jugadors`: lista de jugadores asociados al equipo.
+- `partidosLocal` y `partidosVisitante`: arreglos crudos según la condición en la que el equipo participa.
+- `partidosJugados` y `partidosPendientes`: arreglos consolidados de ambas condiciones, ordenados por fecha. Cada elemento incluye un campo `condicion` (`"Local"` o `"Visitante"`) que indica el rol del equipo en ese encuentro. Estos dos campos satisfacen el requisito de la consigna de mostrar "partidos jugados" y "partidos pendientes" por separado en la vista detallada de cada equipo.
 
 ### Re-carga de resultado
 
