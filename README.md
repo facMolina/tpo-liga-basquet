@@ -77,9 +77,7 @@ tpo-liga-basquet/
 │   ├── scripts/               # Seeds de datos iniciales
 │   └── .env.example           # Plantilla de variables de entorno
 ├── postman/                   # Colección end-to-end (81 requests, 8 folders)
-├── client/                    # Scaffold Vite + React + Tailwind (sin implementar)
-├── documentacion-tecnica.md   # Documentación técnica del backend
-└── testplan.md                # Plan de pruebas de regresión
+└──  client/                    # Scaffold Vite + React + Tailwind (sin implementar)
 ```
 
 El backend sigue una arquitectura MVC estricta: `models/` define las entidades y relaciones, `controllers/` contiene la lógica de negocio y validación con Zod, `routes/` expone los endpoints. La autenticación se aplica como middleware en las rutas que lo requieren.
@@ -424,12 +422,6 @@ GET http://localhost:3000/api/clasificacion
 | Partido con resultado ya cargado (PUT/DELETE) | 400 | `{"error":"No se puede modificar/eliminar un partido con resultado cargado"}` |
 | Re-carga de resultado (POST resultado con resultado previo) | 200 | Stats anteriores revertidas y nuevas aplicadas atómicamente |
 | Local = Visitante en partido | 400 | `{"error":"Un equipo no puede jugar contra sí mismo"}` |
-
----
-
-## Plan de Pruebas
-
-El plan de pruebas completo (casos detallados, inputs/outputs, escenarios de seguridad y desempate) se encuentra en [`testplan.md`](./testplan.md).
 
 ---
 
