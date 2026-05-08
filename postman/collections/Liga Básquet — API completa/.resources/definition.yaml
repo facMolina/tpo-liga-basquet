@@ -1,0 +1,22 @@
+$kind: collection
+description: |-
+  Colección de prueba end-to-end para la API de Liga de Básquet. Cubre health, auth, ligas, equipos, jugadores, partidos, resultado y clasificación. Incluye casos felices y casos que deben fallar (validaciones Zod, reglas de negocio, auth).
+
+  **Pre-requisitos:**
+  - Backend levantado en `localhost:3000`
+  - DB `liga_basquet` creada
+  - `npm run seed` ejecutado (para usuario admin)
+  - Environment `liga-basquet (local)` seleccionado
+
+  **Orden de ejecución:** los folders dependen unos de otros. Correr la colección entera con el Runner.
+variables:
+  token: ""
+  idLiga: ""
+  idEquipoLocal: ""
+  idEquipoVisitante: ""
+  idEquipoTercero: ""
+  nombreEquipoLocal: ""
+  nombreEquipoVisitante: ""
+  idJugador: ""
+  idPartido: ""
+  idPartido2: ""

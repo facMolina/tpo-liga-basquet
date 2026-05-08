@@ -1,0 +1,29 @@
+$kind: http-request
+name: "[OK] POST /jugadores — con idEquipo (guarda idJugador)"
+url: "{{baseUrl}}/jugadores"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: json
+  content: "{\r
+
+    \    \"nombre\": \"Juan\",\r
+
+    \    \"apellido\": \"Test\",\r
+
+    \    \"categoria\": \"U20\",\r
+
+    \    \"idEquipo\": {{idEquipoLocal}}\r
+
+    }"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('status 201', () => pm.response.to.have.status(201));
+      const json = pm.response.json();
+      pm.test('trae idJugador', () => pm.expect(json.idJugador).to.be.a('number'));
+      pm.collectionVariables.set('idJugador', json.idJugador);
+    language: text/javascript
+order: 1000

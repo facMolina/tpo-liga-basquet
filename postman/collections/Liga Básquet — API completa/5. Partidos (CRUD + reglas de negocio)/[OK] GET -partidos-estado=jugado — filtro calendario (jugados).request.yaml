@@ -1,0 +1,12 @@
+$kind: http-request
+name: "[OK] GET /partidos?estado=jugado — filtro calendario (jugados)"
+url: "{{baseUrl}}/partidos?estado=jugado"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('status 200', () => pm.response.to.have.status(200));
+      const arr = pm.response.json();
+      pm.test('todos con resultado', () => arr.forEach(p => pm.expect(p.puntosLocal).to.not.be.null));
+    language: text/javascript
+order: 4600

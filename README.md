@@ -1,212 +1,297 @@
-# 🏀 TPO - Sistema de Gestión Liga de Básquet
+# Sistema de Gestión de Liga de Básquet
 
-Sistema integral para la gestión de equipos, jugadores y estadísticas de una liga de básquet, construido con una arquitectura moderna de Monorepo.
+Aplicación web para la gestión integral de una liga de básquet juvenil. Permite administrar equipos, jugadores y partidos, cargar resultados con actualización automática de estadísticas, y visualizar la tabla de clasificación en tiempo real.
 
 ---
 
-## 📋 Tabla de Contenidos
+## Inicio rápido
 
-- [Características](#características)
-- [Requisitos Previos](#requisitos-previos)
+Pre-requisitos: Node 18+, MySQL 8+, npm.
+
+```bash
+# 1. Instalar dependencias del backend
+cd server && npm install
+
+# 2. Crear la base de datos
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS liga_basquet;"
+
+# 3. Crear server/.env a partir de la plantilla
+cp .env.example .env   # luego editar valores (ver "Configuración del entorno")
+
+# 4. Sembrar admin + datos demo (una sola vez)
+npm run seed
+
+# 5. Levantar backend (puerto 3000)
+npm run dev
+```
+
+- API: http://localhost:3000/api/health
+- Login admin: `admin` / `adminpassword`
+
+> **Alcance de esta entrega**: el repositorio incluye únicamente el backend operativo. La carpeta `client/` contiene el scaffold inicial de Vite + React + Tailwind pero la interfaz no es parte del alcance documentado. Toda la API se valida mediante la colección Postman provista en `postman/`.
+
+Detalle completo de instalación, variables de entorno y troubleshooting en [Instalación](#instalación) y [Configuración del entorno](#configuración-del-entorno).
+
+---
+
+## Tabla de Contenidos
+
+- [Arquitectura técnica](#arquitectura-técnica)
+- [Modelo de datos](#modelo-de-datos)
+- [API Reference](#api-reference)
+- [Seguridad](#seguridad)
 - [Instalación](#instalación)
-- [Scripts de Ejecución](#scripts-de-ejecución)
-- [Estructura de Carpetas](#estructura-de-carpetas)
-- [Configuración del Backend](#configuración-del-backend)
-- [Próximos Pasos](#próximos-pasos)
-- [Tecnologías Utilizadas](#tecnologías-utilizadas)
+- [Configuración del entorno](#configuración-del-entorno)
+- [Cómo probar con Postman](#cómo-probar-con-postman)
+- [Comportamiento ante errores](#comportamiento-ante-errores)
+- [Plan de Pruebas](#plan-de-pruebas)
 
 ---
 
-## ✨ Características
+## Arquitectura técnica
 
-✅ **Frontend Moderno**: Interfaz responsive construida con React y Vite  
-✅ **Backend Robusto**: API REST con Express y Sequelize  
-✅ **Seguridad**: Autenticación con JWT y cifrado con Bcrypt  
-✅ **Validaciones**: Esquemas validados con Zod  
-✅ **Estilos**: Diseño elegante con Tailwind CSS  
-✅ **Base de Datos**: MySQL con ORM Sequelize  
+### Stack
 
----
+| Capa | Tecnología | Versión |
+|------|-----------|---------|
+| Runtime | Node.js | 18+ |
+| Framework web | Express | 5.2+ |
+| ORM | Sequelize | 6.37+ |
+| Base de datos | MySQL | 8.0+ |
+| Autenticación | JWT (jsonwebtoken) | 9.0+ |
+| Cifrado | bcryptjs | 3.0+ |
+| Validación | Zod | 3.23+ |
+| Rate limiting | express-rate-limit | 8.3+ |
+| CORS | cors | 2.8+ |
 
-## 🔧 Requisitos Previos
-
-Antes de comenzar, asegúrate de tener instalados:
-
-- **Node.js** (v16 o superior) → [Descargar](https://nodejs.org/)
-- **npm** (incluido con Node.js)
-- **MySQL** (v5.7 o superior) → [Descargar](https://www.mysql.com/downloads/)
-
-Verifica las versiones instaladas:
-
-```bash
-node --version
-npm --version
-mysql --version
-```
-
----
-
-## 📦 Instalación
-
-### 1️⃣ Clonar el Repositorio
-
-```bash
-git clone https://github.com/tu-usuario/tpo-liga-basquet.git
-cd tpo-liga-basquet
-```
-
-### 2️⃣ Instalar Dependencias del Frontend
-
-```bash
-cd client
-npm install
-cd ..
-```
-
-### 3️⃣ Instalar Dependencias del Backend
-
-```bash
-cd server
-npm install
-cd ..
-```
-
-### 4️⃣ Configurar Variables de Entorno
-
-En la carpeta `/server`, crea un archivo `.env`:
-
-```env
-NODE_ENV=development
-PORT=3000
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=tu_contraseña
-DB_NAME=liga_basquet
-JWT_SECRET=tu_secreto_jwt_super_seguro
-```
-
-### 5️⃣ Inicializar la Base de Datos
-
-```bash
-cd server
-npm run db:setup  # Crea las tablas (configura esto en package.json)
-cd ..
-```
-
----
-
-## 🚀 Scripts de Ejecución
-
-### Frontend (localhost:5173)
-
-```bash
-cd client
-npm run dev      # Inicia servidor de desarrollo con hot reload
-npm run build    # Compila para producción
-npm run preview  # Visualiza la build de producción
-```
-
-### Backend (localhost:3000)
-
-Primero, agrega estos scripts a `/server/package.json`:
-
-```json
-"scripts": {
-  "dev": "nodemon index.js",
-  "start": "node index.js",
-  "db:setup": "node scripts/setup.js"
-}
-```
-
-Luego ejecuta:
-
-```bash
-cd server
-npm run dev      # Inicia servidor con nodemon (recarga automática)
-npm start        # Inicia servidor en producción
-```
-
-### Ejecutar Ambos Simultáneamente (Optativo)
-
-Abre una terminal para cada proyecto:
-
-**Terminal 1 - Frontend:**
-```bash
-cd client && npm run dev
-```
-
-**Terminal 2 - Backend:**
-```bash
-cd server && npm run dev
-```
-
----
-
-## 📁 Estructura de Carpetas
+### Estructura del proyecto
 
 ```
 tpo-liga-basquet/
-├── client/                    # 🎨 Frontend React + Vite
-│   ├── src/
-│   │   ├── main.jsx          # Punto de entrada React
-│   │   ├── App.jsx           # Componente principal
-│   │   ├── index.css         # Estilos globales + Tailwind
-│   │   └── components/       # Componentes reutilizables
-│   ├── index.html            # HTML base
-│   ├── vite.config.js        # Configuración Vite
-│   ├── tailwind.config.js    # Configuración Tailwind CSS
-│   ├── postcss.config.js     # Configuración PostCSS
-│   └── package.json          # Dependencias frontend
-│
-├── server/                    # 🖥️ Backend Express + Node.js
-│   ├── config/
-│   │   └── database.js       # Configuración MySQL
-│   ├── models/               # Modelos Sequelize
-│   │   ├── Equipo.js
-│   │   └── Jugador.js
-│   ├── routes/               # Rutas API
-│   │   ├── equipos.js
-│   │   └── jugadores.js
-│   ├── middleware/           # Middlewares (autenticación, etc)
-│   │   └── auth.js
-│   ├── controllers/          # Lógica de negocio
-│   ├── index.js              # Punto de entrada servidor
-│   └── package.json          # Dependencias backend
-│
-├── .gitignore                # Archivos a ignorar en Git
-└── README.md                 # Este archivo 📄
+├── server/                    # Backend Express (MVC) — alcance de esta entrega
+│   ├── config/database.js     # Conexión Sequelize
+│   ├── models/                # Modelos Sequelize + relaciones
+│   ├── controllers/           # Lógica de negocio + validación Zod
+│   ├── routes/                # Definición de rutas
+│   ├── middleware/            # JWT (auth) y validateId
+│   ├── scripts/               # Seeds de datos iniciales
+│   └── .env.example           # Plantilla de variables de entorno
+├── postman/                   # Colección end-to-end (81 requests, 8 folders)
+└──  client/                    # Scaffold Vite + React + Tailwind (sin implementar)
+```
+
+El backend sigue una arquitectura MVC estricta: `models/` define las entidades y relaciones, `controllers/` contiene la lógica de negocio y validación con Zod, `routes/` expone los endpoints. La autenticación se aplica como middleware en las rutas que lo requieren.
+
+---
+
+## Modelo de datos
+
+### Tablas
+
+#### Liga
+| Campo | Tipo | Restricciones |
+|-------|------|---------------|
+| idLiga | INTEGER | PK, auto-incremental |
+| nombre | STRING | NOT NULL |
+| temporada | STRING | NOT NULL |
+| descripcion | TEXT | Permite NULL |
+
+#### Usuario
+| Campo | Tipo | Restricciones |
+|-------|------|---------------|
+| idUsuario | INTEGER | PK, auto-incremental |
+| usuario | STRING | NOT NULL, UNIQUE |
+| password_hash | STRING | NOT NULL |
+
+#### Equipo
+| Campo | Tipo | Restricciones |
+|-------|------|---------------|
+| idEquipo | INTEGER | PK, auto-incremental |
+| nombre | STRING | NOT NULL |
+| entrenador | STRING | NOT NULL |
+| partidosGanados | INTEGER | Default 0 |
+| partidosEmpatados | INTEGER | Default 0 |
+| partidosPerdidos | INTEGER | Default 0 |
+| puntosFavor | INTEGER | Default 0 |
+| puntosEnContra | INTEGER | Default 0 |
+| partidosJugados | INTEGER | Default 0 |
+| puntosTotales | INTEGER | Default 0 |
+| diferenciaPuntos | INTEGER | Default 0 |
+| idLiga | INTEGER | FK → Liga, NOT NULL, ON DELETE RESTRICT |
+
+#### Jugador
+| Campo | Tipo | Restricciones |
+|-------|------|---------------|
+| idJugador | INTEGER | PK, auto-incremental |
+| nombre | STRING | NOT NULL |
+| apellido | STRING | NOT NULL |
+| categoria | STRING | NOT NULL |
+| idEquipo | INTEGER | FK → Equipo, Permite NULL, ON DELETE SET NULL |
+
+#### Partido
+| Campo | Tipo | Restricciones |
+|-------|------|---------------|
+| idPartido | INTEGER | PK, auto-incremental |
+| fecha | DATEONLY | NOT NULL |
+| hora | TIME | NOT NULL |
+| lugar | STRING | NOT NULL |
+| puntosLocal | INTEGER | Permite NULL (null = pendiente) |
+| puntosVisitante | INTEGER | Permite NULL (null = pendiente) |
+| idLocal | INTEGER | FK → Equipo, NOT NULL, ON DELETE RESTRICT |
+| idVisitante | INTEGER | FK → Equipo, NOT NULL, ON DELETE RESTRICT |
+
+### Relaciones
+
+- **Liga 1:N Equipo** — FK `idLiga` en Equipo, NOT NULL. RESTRICT: no se puede eliminar una liga con equipos asociados.
+- **Equipo 1:N Jugador** — Si se elimina el equipo, `idEquipo` del jugador se setea en NULL.
+- **Equipo 1:N Partido (Local)** — FK `idLocal`, alias `partidosLocal`. RESTRICT: no se puede eliminar un equipo con partidos asociados.
+- **Equipo 1:N Partido (Visitante)** — FK `idVisitante`, alias `partidosVisitante`. RESTRICT.
+
+### Reglas de puntuación
+
+| Resultado | Puntos |
+|-----------|--------|
+| Partido ganado | 3 |
+| Partido empatado | 1 |
+| Partido perdido | 0 |
+
+**Desempate en la clasificación:** 1) Mayor diferencia de tantos (PF − PC). 2) Mayor cantidad de tantos a favor.
+
+---
+
+## API Reference
+
+### Autenticación
+
+| Método | Ruta | Auth | Descripción |
+|--------|------|------|-------------|
+| POST | `/api/auth/login` | No | Login. Devuelve token JWT (12h) |
+| GET | `/api/auth/me` | Sí | Verifica token y devuelve datos del usuario |
+
+### Liga
+
+| Método | Ruta | Auth | Descripción |
+|--------|------|------|-------------|
+| GET | `/api/ligas` | No | Listar todas las ligas |
+| GET | `/api/ligas/:id` | No | Obtener liga por ID |
+| POST | `/api/ligas` | Sí | Crear liga |
+| PUT | `/api/ligas/:id` | Sí | Actualizar liga |
+| DELETE | `/api/ligas/:id` | Sí | Eliminar liga |
+
+### Equipos
+
+| Método | Ruta | Auth | Descripción |
+|--------|------|------|-------------|
+| GET | `/api/equipos` | No | Listar todos los equipos |
+| GET | `/api/equipos/:id` | No | Vista detallada: equipo con `Jugadors`, `partidosLocal`, `partidosVisitante`, `partidosJugados` y `partidosPendientes` (estos dos últimos combinan ambas condiciones, cada partido marcado con `condicion: "Local"\|"Visitante"`) |
+| POST | `/api/equipos` | Sí | Crear equipo |
+| PUT | `/api/equipos/:id` | Sí | Actualizar nombre/entrenador |
+| DELETE | `/api/equipos/:id` | Sí | Eliminar equipo (falla si tiene partidos) |
+
+### Jugadores
+
+| Método | Ruta | Auth | Descripción |
+|--------|------|------|-------------|
+| GET | `/api/jugadores` | No | Listar todos los jugadores |
+| GET | `/api/jugadores/:id` | No | Obtener jugador por ID |
+| POST | `/api/jugadores` | Sí | Crear jugador |
+| PUT | `/api/jugadores/:id` | Sí | Actualizar jugador |
+| DELETE | `/api/jugadores/:id` | Sí | Eliminar jugador |
+
+### Partidos
+
+| Método | Ruta | Auth | Descripción |
+|--------|------|------|-------------|
+| GET | `/api/partidos` | No | Listar partidos ordenados por fecha. Acepta query opcionales: `?estado=pendiente\|jugado`, `?desde=YYYY-MM-DD`, `?hasta=YYYY-MM-DD` (combinables) |
+| GET | `/api/partidos/:id` | No | Obtener partido por ID |
+| POST | `/api/partidos` | Sí | Programar partido (fecha, hora, lugar, equipos) |
+| PUT | `/api/partidos/:id` | Sí | Editar partido (solo si no tiene resultado) |
+| DELETE | `/api/partidos/:id` | Sí | Eliminar partido (solo si no tiene resultado) |
+| POST | `/api/partidos/:id/resultado` | Sí | Cargar resultado y actualizar estadísticas automáticamente |
+
+### Clasificación
+
+| Método | Ruta | Auth | Descripción |
+|--------|------|------|-------------|
+| GET | `/api/clasificacion` | No | Tabla de posiciones ordenada con todos los campos requeridos |
+
+**Campos de respuesta de `/api/clasificacion`:**
+```json
+[
+  {
+    "posicion": 1,
+    "idEquipo": 2,
+    "nombre": "Los Tigres",
+    "puntosTotales": 9,
+    "PJ": 3,
+    "PG": 3,
+    "PE": 0,
+    "PP": 0,
+    "tantosFavor": 250,
+    "tantosEnContra": 210,
+    "diferenciaPuntos": 40
+  }
+]
 ```
 
 ---
 
-## ⚙️ Configuración del Backend
+## Seguridad
 
-### Crear Archivo de Entrada `/server/index.js`
+- **Autenticación JWT**: Las rutas administrativas requieren el header `Authorization: Bearer <token>`. El token expira en 12 horas.
+- **Cifrado de contraseñas**: bcryptjs con salt rounds = 10.
+- **Rate limiting**: Login limitado a 20 intentos por IP cada 15 minutos. Exceder el límite devuelve 429.
+- **CORS restringido**: Solo acepta requests de orígenes en `CORS_ORIGIN` (por defecto `localhost:5173` y `localhost:3000`).
+- **Validación de entradas**: Todos los endpoints usan schemas Zod con `.strict()` — rechaza campos desconocidos y aplica límites de tamaño en todos los strings.
+- **Validación de IDs**: Middleware `validateId` en todas las rutas con `:id` — rechaza IDs no enteros o negativos con 400.
+- **Nombres únicos**: No se puede crear un equipo con un nombre ya existente (409).
+- **Integridad referencial**: FK con `ON DELETE RESTRICT` en partidos impide eliminar equipos con historial de partidos (409).
+- **Transacciones**: La carga de resultados usa `sequelize.transaction()` con `SELECT ... FOR UPDATE` para garantizar consistencia bajo concurrencia.
 
-```javascript
-const express = require('express');
-const cors = require('cors');
-require('dotenv').config();
+---
 
-const app = express();
+## Instalación
 
-// Middlewares
-app.use(cors());
-app.use(express.json());
+### Requisitos previos
 
-// Rutas
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'Backend funcionando ✅' });
-});
+- Node.js v18+
+- MySQL v8.0+
+- npm
 
-// Iniciar servidor
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-});
+### Pasos
+
+```bash
+# 1. Posicionarse en la raíz del proyecto
+
+# 2. Instalar dependencias del backend
+cd server && npm install
+
+# 3. Crear la base de datos en MySQL
+mysql -u root -p
+> CREATE DATABASE IF NOT EXISTS liga_basquet;
+> EXIT;
+
+# 4. Configurar variables de entorno
+cp .env.example .env
+# Editar .env y completar JWT_SECRET, DB_PASSWORD, etc.
+
+# 5. Cargar datos iniciales (una sola vez)
+npm run seed
+# Equivalente a:
+#   node scripts/seedAdmin.js
+#   node scripts/seedLiga.js
+
+# 6. Levantar el backend (sincroniza tablas automáticamente)
+npm run dev
 ```
 
-### Crear Archivo `.env.example`
+- **Backend:** `http://localhost:3000`
+
+---
+
+## Configuración del entorno
+
+Copiar la plantilla `server/.env.example` a `server/.env` y completar los valores:
 
 ```env
 NODE_ENV=development
@@ -215,95 +300,138 @@ DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=
 DB_NAME=liga_basquet
-JWT_SECRET=tu_secreto_jwt_aqui
+DB_PORT=3306
+JWT_SECRET=tu_secreto_jwt_super_seguro
+ADMIN_USER=admin
+ADMIN_PASSWORD=adminpassword
+CORS_ORIGIN=http://localhost:5173,http://localhost:3000
+```
+
+La descripción completa de cada variable está en `server/.env.example`.
+
+**Credenciales de prueba (entorno de evaluación):**
+- Usuario: `admin`
+- Contraseña: `adminpassword`
+
+---
+
+## Cómo probar con Postman
+
+Postman es un cliente HTTP para probar APIs. La colección y el environment están versionados en `postman/`.
+
+### Configuración inicial
+
+1. Instalar **Postman** (desktop o extensión web).
+2. **Import** → seleccionar `postman/liga-basquet.postman_collection.json` y `postman/liga-basquet.postman_environment.json`.
+3. En el dropdown de environments (arriba a la derecha) → seleccionar `liga-basquet (local)`.
+4. La variable `token` se setea automáticamente al correr el request `[OK] POST /auth/login — admin (extrae token)` del folder `1. Auth`.
+
+Para correr toda la colección end-to-end: click derecho sobre la colección → **Run collection**. Todos los requests deben pasar (verde).
+
+### Por CLI con Newman
+
+Si preferís validar la colección sin abrir Postman (útil en CI o para evaluación rápida):
+
+```bash
+cd postman
+npx --yes newman@6 run liga-basquet.postman_collection.json -e liga-basquet.postman_environment.json
+```
+
+Exit code `0` = todos los assertions OK. La colección cubre **87 requests / 8 folders** sobre los 6 recursos de la API más smoke test, autenticación y clasificación.
+
+### Re-ejecución sobre la misma DB
+
+La colección deja datos en la DB (ligas, equipos, jugadores, partido con resultado). Los nombres incluyen `{{$timestamp}}` para evitar 409 de duplicado, así que se puede re-correr sin limpiar. Si querés ejecutarla sobre una base limpia:
+
+```bash
+mysql -u root -e "DROP DATABASE liga_basquet; CREATE DATABASE liga_basquet;"
+cd server && npm run seed   # vuelve a crear admin + datos demo
+```
+
+### Si algún test falla
+
+| Síntoma | Diagnóstico |
+|---------|-------------|
+| `[OK] ...` con 4xx/5xx | Bug en el backend o el test asume una shape de response que cambió. Comparar con el response real (`curl ...` directo). |
+| `[FAIL 4xx] ...` con 200 | Regresión: el backend dejó de validar algo que antes validaba. |
+| 401 generalizado | El token expiró (12h) o el extract del login falló. Re-correr desde el folder `1. Auth`. |
+| 500 con "Unknown column" en logs | DB con schema viejo. `DROP DATABASE` y recrear, después `npm run seed` y reintentar. |
+
+### Flujo básico de prueba
+
+**Paso 1 — Verificar que el servidor responde:**
+```
+GET http://localhost:3000/api/health
+→ 200 {"status":"OK"}
+```
+
+**Paso 2 — Login y guardar token:**
+```
+POST http://localhost:3000/api/auth/login
+Headers: Content-Type: application/json
+Body: {"usuario":"admin","password":"adminpassword"}
+→ Copiar el valor de "token" y pegarlo en la variable {{token}} del entorno
+```
+
+**Paso 3 — Crear un equipo:**
+```
+POST http://localhost:3000/api/equipos
+Headers: Authorization: Bearer {{token}}
+Body: {"nombre":"Los Tigres","entrenador":"Juan Perez"}
+→ 201 con el equipo creado
+```
+
+**Paso 4 — Programar un partido:**
+```
+POST http://localhost:3000/api/partidos
+Headers: Authorization: Bearer {{token}}
+Body: {"fecha":"2026-05-15","hora":"19:00","lugar":"Estadio Municipal","idLocal":1,"idVisitante":2}
+→ 201 con el partido y equipos embebidos
+```
+
+**Paso 5 — Cargar resultado:**
+```
+POST http://localhost:3000/api/partidos/1/resultado
+Headers: Authorization: Bearer {{token}}
+Body: {"puntosLocal":85,"puntosVisitante":72}
+→ 200 con partido actualizado y estadísticas de ambos equipos
+```
+
+**Paso 6 — Ver clasificación:**
+```
+GET http://localhost:3000/api/clasificacion
+→ 200 array ordenado por posición
 ```
 
 ---
 
-## 🔜 Próximos Pasos
+## Comportamiento ante errores
 
-Una vez que tengas el entorno funcionando:
-
-1. **🗄️ Configurar la Base de Datos**
-   - Crear modelos Sequelize para `Equipo` y `Jugador`
-   - Ejecutar migraciones automáticas
-
-2. **🛣️ Crear Rutas API**
-   - GET/POST/PUT/DELETE para equipos
-   - GET/POST/PUT/DELETE para jugadores
-   - Autenticación JWT
-
-3. **🎨 Desarrollar Componentes Frontend**
-   - Página de Login
-   - Dashboard de Equipos
-   - Lista de Jugadores
-   - Formularios de CRUD
-
-4. **🔐 Implementar Seguridad**
-   - Validaciones con Zod
-   - Autenticación con JWT
-   - Cifrado de contraseñas con Bcrypt
-
-5. **🚀 Deploy**
-   - Vercel para el frontend
-   - Railway/Heroku para el backend
-   - Base de datos en la nube (Clever Cloud, PlanetScale)
+| Situación | Código | Respuesta |
+|-----------|--------|-----------|
+| Ruta protegida sin token | 401 | `{"error":"Autenticación requerida"}` |
+| Header mal formado (no Bearer) | 401 | `{"error":"Formato de autorización inválido. Use Bearer <token>"}` |
+| Token inválido o expirado | 403 | `{"error":"Token inválido o expirado"}` |
+| Demasiados intentos de login | 429 | `{"error":"Demasiados intentos de login. Intentá de nuevo en 15 minutos."}` |
+| ID no es un entero positivo en la URL | 400 | `{"error":"El ID debe ser un entero positivo"}` |
+| Recurso no encontrado | 404 | `{"error":"... no encontrado"}` |
+| Body inválido, campos faltantes o campos extra | 400 | `{"errors":[...]}` |
+| idEquipo/idLocal/idVisitante inexistente | 400 | `{"error":"El equipo ... no existe"}` |
+| Nombre de equipo duplicado | 409 | `{"error":"Ya existe un equipo con ese nombre"}` |
+| Equipo con partidos asociados (DELETE) | 409 | `{"error":"No se puede eliminar el equipo: tiene N partido(s) asociado(s)"}` |
+| Partido con resultado ya cargado (PUT/DELETE) | 400 | `{"error":"No se puede modificar/eliminar un partido con resultado cargado"}` |
+| Re-carga de resultado (POST resultado con resultado previo) | 200 | Stats anteriores revertidas y nuevas aplicadas atómicamente |
+| Local = Visitante en partido | 400 | `{"error":"Un equipo no puede jugar contra sí mismo"}` |
 
 ---
 
-## 🛠️ Tecnologías Utilizadas
+## Equipo
 
-### Frontend
-| Tecnología | Versión | Propósito |
-|-----------|---------|----------|
-| React | 18.2+ | Librería UI |
-| Vite | 5.4+ | Bundler rápido |
-| Tailwind CSS | 4.2+ | Estilos CSS |
-| Lucide-React | 0.294+ | Iconos |
-| React Router | 6.18+ | Navegación |
-
-### Backend
-| Tecnología | Versión | Propósito |
-|-----------|---------|----------|
-| Node.js | 16+ | Runtime JavaScript |
-| Express | 5.2+ | Framework web |
-| Sequelize | 6.37+ | ORM MySQL |
-| MySQL2 | 3.20+ | Driver MySQL |
-| JWT | 9.0+ | Autenticación |
-| Bcrypt | 3.0+ | Cifrado |
-| Zod | 4.3+ | Validaciones |
-| Dotenv | 17.3+ | Variables de entorno |
+- **Facundo** — Full Stack Developer
+- **Mateo** — Full Stack Developer
 
 ---
 
-## 📚 Recursos Útiles
+## Licencia
 
-- [Documentación React](https://es.react.dev/)
-- [Documentación Vite](https://vitejs.dev/)
-- [Documentación Tailwind CSS](https://tailwindcss.com/)
-- [Documentación Express](https://expressjs.com/)
-- [Documentación Sequelize](https://sequelize.org/)
-- [JWT Basics](https://jwt.io/)
-
----
-
-## 👥 Equipo
-
-- **Facundo** - Full Stack Developer
-- **Mateo** - Full Stack Developer
-
----
-
-## 📝 Licencia
-
-Este proyecto es de código cerrado para uso académico (TPO).
-
----
-
-## 💬 Soporte
-
-Si encuentras problemas, abre un issue en el repositorio o contacta al equipo de desarrollo.
-
----
-
-**Última actualización**: Marzo 2026 📅
+Proyecto de código cerrado para uso académico (TPO).

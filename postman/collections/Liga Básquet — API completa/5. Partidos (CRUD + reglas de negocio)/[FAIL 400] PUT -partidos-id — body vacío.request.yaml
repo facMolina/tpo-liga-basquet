@@ -1,0 +1,15 @@
+$kind: http-request
+name: "[FAIL 400] PUT /partidos/:id — body vacío"
+url: "{{baseUrl}}/partidos/{{idPartido}}"
+method: PUT
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: json
+  content: "{}"
+scripts:
+  - type: afterResponse
+    code: pm.test('status 400', () => pm.response.to.have.status(400));
+    language: text/javascript
+order: 13000
