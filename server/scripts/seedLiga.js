@@ -1,13 +1,60 @@
 const sequelize = require('../config/database');
 const { Liga, Equipo, Jugador } = require('../models');
 
+const equiposData = [
+  {
+    nombre: 'Halcones Rojos',
+    entrenador: 'Carlos Méndez',
+    jugadores: [
+      { nombre: 'Lucas', apellido: 'García', categoria: 'Juvenil' },
+      { nombre: 'Mateo', apellido: 'Fernández', categoria: 'Juvenil' },
+      { nombre: 'Tomás', apellido: 'López', categoria: 'Juvenil' },
+      { nombre: 'Joaquín', apellido: 'Ramírez', categoria: 'Juvenil' },
+      { nombre: 'Bruno', apellido: 'Suárez', categoria: 'Juvenil' },
+    ],
+  },
+  {
+    nombre: 'Tigres Azules',
+    entrenador: 'Roberto Álvarez',
+    jugadores: [
+      { nombre: 'Diego', apellido: 'Martínez', categoria: 'Juvenil' },
+      { nombre: 'Nicolás', apellido: 'Ruiz', categoria: 'Juvenil' },
+      { nombre: 'Santiago', apellido: 'Pereyra', categoria: 'Juvenil' },
+      { nombre: 'Facundo', apellido: 'Romero', categoria: 'Juvenil' },
+      { nombre: 'Ignacio', apellido: 'Torres', categoria: 'Juvenil' },
+    ],
+  },
+  {
+    nombre: 'Águilas Doradas',
+    entrenador: 'Javier Sosa',
+    jugadores: [
+      { nombre: 'Agustín', apellido: 'Gómez', categoria: 'Juvenil' },
+      { nombre: 'Manuel', apellido: 'Díaz', categoria: 'Juvenil' },
+      { nombre: 'Valentín', apellido: 'Rojas', categoria: 'Juvenil' },
+      { nombre: 'Emiliano', apellido: 'Castro', categoria: 'Juvenil' },
+      { nombre: 'Gonzalo', apellido: 'Vega', categoria: 'Juvenil' },
+    ],
+  },
+  {
+    nombre: 'Lobos Plateados',
+    entrenador: 'Hernán Acosta',
+    jugadores: [
+      { nombre: 'Franco', apellido: 'Molina', categoria: 'Juvenil' },
+      { nombre: 'Julián', apellido: 'Herrera', categoria: 'Juvenil' },
+      { nombre: 'Lautaro', apellido: 'Ortiz', categoria: 'Juvenil' },
+      { nombre: 'Maximiliano', apellido: 'Silva', categoria: 'Juvenil' },
+      { nombre: 'Benjamín', apellido: 'Cabrera', categoria: 'Juvenil' },
+    ],
+  },
+];
+
 async function seed() {
   try {
     await sequelize.authenticate();
     console.log('Conexión establecida para el seed.');
     await sequelize.sync();
 
-    const ligaNombre = process.env.LIGA_NAME || 'Liga_1';
+    const ligaNombre = process.env.LIGA_NAME || 'Liga de Basquet Juvenil';
     const [liga, ligaCreated] = await Liga.findOrCreate({
       where: { nombre: ligaNombre },
       defaults: {
@@ -17,33 +64,23 @@ async function seed() {
     });
     console.log(ligaCreated ? `Liga creada: ${liga.nombre}` : `Liga ya existía: ${liga.nombre}`);
 
-    const equiposData = [
-      { nombre: 'Equipo_1', entrenador: 'Coach_1' },
-      { nombre: 'Equipo_2', entrenador: 'Coach_2' },
-      { nombre: 'Equipo_3', entrenador: 'Coach_3' },
-      { nombre: 'Equipo_4', entrenador: 'Coach_4' },
-    ];
-    const equipos = [];
     for (const data of equiposData) {
-      const [e, created] = await Equipo.findOrCreate({ where: { nombre: data.nombre }, defaults: data });
-      console.log(created ? `Equipo creado: ${e.nombre}` : `Equipo ya existía: ${e.nombre}`);
-      equipos.push(e);
-    }
+      const [equipo, equipoCreated] = await Equipo.findOrCreate({
+        where: { nombre: data.nombre, idLiga: liga.idLiga },
+        defaults: { nombre: data.nombre, entrenador: data.entrenador, idLiga: liga.idLiga },
+      });
+      console.log(equipoCreated ? `Equipo creado: ${equipo.nombre}` : `Equipo ya existía: ${equipo.nombre}`);
 
-    let idx = 1;
-    for (const equipo of equipos) {
-      for (let i = 0; i < 2; i++) {
-        const nombre = `Jugador_${idx}`;
-        const apellido = `Apellido_${idx}`;
-        const [j, created] = await Jugador.findOrCreate({
-          where: { nombre, apellido, idEquipo: equipo.idEquipo },
-          defaults: { categoria: 'U17', idEquipo: equipo.idEquipo },
+      for (const jugador of data.jugadores) {
+        const [j, jCreated] = await Jugador.findOrCreate({
+          where: { nombre: jugador.nombre, apellido: jugador.apellido, idEquipo: equipo.idEquipo },
+          defaults: { ...jugador, idEquipo: equipo.idEquipo },
         });
-        console.log(created ? `Jugador creado: ${j.nombre} ${j.apellido} (${equipo.nombre})` : `Jugador ya existía: ${j.nombre} ${j.apellido}`);
-        idx++;
+        console.log(jCreated ? `Jugador creado: ${j.nombre} ${j.apellido} (${equipo.nombre})` : `Jugador ya existía: ${j.nombre} ${j.apellido}`);
       }
     }
 
+    console.log('Seed de liga, equipos y jugadores finalizado correctamente.');
     await sequelize.close();
     process.exit(0);
   } catch (error) {

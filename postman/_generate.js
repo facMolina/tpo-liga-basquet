@@ -5,11 +5,26 @@
 const fs = require('fs');
 const path = require('path');
 
-const url = (segments) => ({
-  raw: '{{baseUrl}}/' + segments.join('/'),
-  host: ['{{baseUrl}}'],
-  path: segments,
-});
+const url = (segments) => {
+  let query = null;
+  let segs = [...segments];
+  const last = segs[segs.length - 1];
+  if (typeof last === 'string' && last.includes('?')) {
+    const idx = last.indexOf('?');
+    const qStr = last.slice(idx + 1);
+    segs[segs.length - 1] = last.slice(0, idx);
+    query = qStr.split('&').map((pair) => {
+      const [key, value = ''] = pair.split('=');
+      return { key, value };
+    });
+  }
+  return {
+    raw: '{{baseUrl}}/' + segs.join('/') + (query ? '?' + query.map((p) => `${p.key}=${p.value}`).join('&') : ''),
+    host: ['{{baseUrl}}'],
+    path: segs,
+    ...(query ? { query } : {}),
+  };
+};
 
 const jsonHeader = { key: 'Content-Type', value: 'application/json' };
 const authHeader = { key: 'Authorization', value: 'Bearer {{token}}' };
@@ -136,7 +151,18 @@ const folderLigas = {
     req({ name: '[FAIL 400] GET /ligas/0 — id cero', method: 'GET', path: ['ligas', '0'], tests: [expectStatus(400)] }),
     req({ name: '[FAIL 404] GET /ligas/99999 — no existe', method: 'GET', path: ['ligas', '99999'], tests: [expectStatus(404)] }),
     req({ name: '[FAIL 404] PUT /ligas/99999 — no existe', method: 'PUT', path: ['ligas', '99999'], headers: [jsonHeader, authHeader], body: body({ nombre: 'X', temporada: '2026' }), tests: [expectStatus(404)] }),
-    req({ name: '[OK] DELETE /ligas/:id — borrar (cleanup)', method: 'DELETE', path: ['ligas', '{{idLiga}}'], headers: [authHeader], tests: [expectStatus(200)] }),
+    req({
+      name: '[OK] POST /ligas — crear throwaway (para test DELETE)',
+      method: 'POST',
+      path: ['ligas'],
+      headers: [jsonHeader, authHeader],
+      body: body({ nombre: 'Liga Throwaway Test', temporada: '2026', descripcion: 'Liga descartable para testear DELETE sin afectar la liga principal' }),
+      tests: [
+        expectStatus(201),
+        `pm.collectionVariables.set('idLigaThrowaway', pm.response.json().idLiga);`,
+      ],
+    }),
+    req({ name: '[OK] DELETE /ligas/:id — borrar throwaway (cleanup)', method: 'DELETE', path: ['ligas', '{{idLigaThrowaway}}'], headers: [authHeader], tests: [expectStatus(200)] }),
   ],
 };
 
@@ -148,7 +174,7 @@ const folderEquipos = {
       method: 'POST',
       path: ['equipos'],
       headers: [jsonHeader, authHeader],
-      body: rawBody(`{"nombre":"Equipo_test_local_{{$timestamp}}","entrenador":"Coach_test_local"}`),
+      body: rawBody(`{"nombre":"Equipo_test_local_{{$timestamp}}","entrenador":"Coach_test_local","idLiga":{{idLiga}}}`),
       tests: [
         expectStatus(201),
         `const json = pm.response.json();`,
@@ -162,7 +188,7 @@ const folderEquipos = {
       method: 'POST',
       path: ['equipos'],
       headers: [jsonHeader, authHeader],
-      body: rawBody(`{"nombre":"Equipo_test_visitante_{{$timestamp}}","entrenador":"Coach_test_visitante"}`),
+      body: rawBody(`{"nombre":"Equipo_test_visitante_{{$timestamp}}","entrenador":"Coach_test_visitante","idLiga":{{idLiga}}}`),
       tests: [
         expectStatus(201),
         `const json = pm.response.json();`,
@@ -175,7 +201,7 @@ const folderEquipos = {
       method: 'POST',
       path: ['equipos'],
       headers: [jsonHeader, authHeader],
-      body: rawBody(`{"nombre":"Equipo_test_tercero_{{$timestamp}}","entrenador":"Coach_test_tercero"}`),
+      body: rawBody(`{"nombre":"Equipo_test_tercero_{{$timestamp}}","entrenador":"Coach_test_tercero","idLiga":{{idLiga}}}`),
       tests: [
         expectStatus(201),
         `const json = pm.response.json();`,
@@ -190,9 +216,12 @@ const folderEquipos = {
       tests: [
         expectStatus(200),
         `const json = pm.response.json();`,
+        `pm.test('entrenador presente', () => pm.expect(json.entrenador).to.be.a('string'));`,
         `pm.test('Jugadors es array', () => pm.expect(json.Jugadors).to.be.an('array'));`,
         `pm.test('partidosLocal es array', () => pm.expect(json.partidosLocal).to.be.an('array'));`,
         `pm.test('partidosVisitante es array', () => pm.expect(json.partidosVisitante).to.be.an('array'));`,
+        `pm.test('partidosJugados es array', () => pm.expect(json.partidosJugados).to.be.an('array'));`,
+        `pm.test('partidosPendientes es array', () => pm.expect(json.partidosPendientes).to.be.an('array'));`,
       ],
     }),
     req({
@@ -210,7 +239,7 @@ const folderEquipos = {
     req({ name: '[FAIL 400] POST /equipos — body vacío', method: 'POST', path: ['equipos'], headers: [jsonHeader, authHeader], body: body({}), tests: [expectStatus(400)] }),
     req({ name: '[FAIL 400] POST /equipos — sin entrenador', method: 'POST', path: ['equipos'], headers: [jsonHeader, authHeader], body: body({ nombre: 'Sin Coach' }), tests: [expectStatus(400)] }),
     req({ name: '[FAIL 400] POST /equipos — campo extra (mass assignment)', method: 'POST', path: ['equipos'], headers: [jsonHeader, authHeader], body: body({ nombre: 'Hack', entrenador: 'Y', partidosGanados: 999 }), tests: [expectStatus(400)] }),
-    req({ name: '[FAIL 409] POST /equipos — nombre duplicado', method: 'POST', path: ['equipos'], headers: [jsonHeader, authHeader], body: rawBody(`{"nombre":"{{nombreEquipoLocal}}","entrenador":"Otro"}`), tests: [expectStatus(409)] }),
+    req({ name: '[FAIL 409] POST /equipos — nombre duplicado', method: 'POST', path: ['equipos'], headers: [jsonHeader, authHeader], body: rawBody(`{"nombre":"{{nombreEquipoLocal}}","entrenador":"Otro","idLiga":{{idLiga}}}`), tests: [expectStatus(409)] }),
     req({ name: '[FAIL 400] PUT /equipos/:id — body vacío', method: 'PUT', path: ['equipos', '{{idEquipoLocal}}'], headers: [jsonHeader, authHeader], body: body({}), tests: [expectStatus(400)] }),
     req({ name: '[FAIL 409] PUT /equipos/:id — nombre duplicado del visitante', method: 'PUT', path: ['equipos', '{{idEquipoLocal}}'], headers: [jsonHeader, authHeader], body: rawBody(`{"nombre":"{{nombreEquipoVisitante}}"}`), tests: [expectStatus(409)] }),
     req({ name: '[FAIL 400] PUT /equipos/:id — campo extra (mass assignment)', method: 'PUT', path: ['equipos', '{{idEquipoLocal}}'], headers: [jsonHeader, authHeader], body: body({ partidosGanados: 999 }), tests: [expectStatus(400)] }),
@@ -301,6 +330,37 @@ const folderPartidos = {
       ],
     }),
     req({
+      name: '[OK] GET /partidos?estado=pendiente — filtro calendario (pendientes)',
+      method: 'GET',
+      path: ['partidos?estado=pendiente'],
+      tests: [
+        expectStatus(200),
+        `const arr = pm.response.json();`,
+        `pm.test('todos sin resultado', () => arr.forEach(p => pm.expect(p.puntosLocal).to.be.null));`,
+      ],
+    }),
+    req({
+      name: '[OK] GET /partidos?estado=jugado — filtro calendario (jugados)',
+      method: 'GET',
+      path: ['partidos?estado=jugado'],
+      tests: [
+        expectStatus(200),
+        `const arr = pm.response.json();`,
+        `pm.test('todos con resultado', () => arr.forEach(p => pm.expect(p.puntosLocal).to.not.be.null));`,
+      ],
+    }),
+    req({
+      name: '[OK] GET /partidos?desde=...&hasta=... — filtro calendario por rango',
+      method: 'GET',
+      path: ['partidos?desde=2026-01-01&hasta=2026-12-31'],
+      tests: [
+        expectStatus(200),
+        expectArrayResponse,
+      ],
+    }),
+    req({ name: '[FAIL 400] GET /partidos?estado=invalido — query inválida', method: 'GET', path: ['partidos?estado=invalido'], tests: [expectStatus(400)] }),
+    req({ name: '[FAIL 400] GET /partidos?desde=mal — fecha mal formateada', method: 'GET', path: ['partidos?desde=01-01-2026'], tests: [expectStatus(400)] }),
+    req({
       name: '[OK] GET /partidos/:id',
       method: 'GET',
       path: ['partidos', '{{idPartido}}'],
@@ -334,6 +394,7 @@ const folderPartidos = {
     req({ name: '[FAIL 404] PUT /partidos/99999 — no existe', method: 'PUT', path: ['partidos', '99999'], headers: [jsonHeader, authHeader], body: body({ lugar: 'X' }), tests: [expectStatus(404)] }),
     req({ name: '[FAIL 404] DELETE /partidos/99999 — no existe', method: 'DELETE', path: ['partidos', '99999'], headers: [authHeader], tests: [expectStatus(404)] }),
     req({ name: '[FAIL 409] DELETE /equipos/:id — equipo con partidos asociados (RESTRICT)', method: 'DELETE', path: ['equipos', '{{idEquipoLocal}}'], headers: [authHeader], tests: [expectStatus(409)] }),
+    req({ name: '[FAIL 409] DELETE /ligas/:id — liga con equipos asociados (RESTRICT)', method: 'DELETE', path: ['ligas', '{{idLiga}}'], headers: [authHeader], tests: [expectStatus(409)] }),
   ],
 };
 
@@ -403,12 +464,12 @@ const folderClasificacion = {
         `const arr = pm.response.json();`,
         `if (arr.length > 0) {`,
         `  const item = arr[0];`,
-        `  const campos = ['posicion','idEquipo','nombre','puntos','PJ','PG','PE','PP','tantosFavor','tantosEnContra','diferencia'];`,
+        `  const campos = ['posicion','idEquipo','nombre','puntosTotales','PJ','PG','PE','PP','tantosFavor','tantosEnContra','diferenciaPuntos'];`,
         `  campos.forEach(c => pm.test('campo ' + c + ' presente', () => pm.expect(item).to.have.property(c)));`,
         `}`,
-        `pm.test('orden por puntos DESC', () => {`,
+        `pm.test('orden por puntosTotales DESC', () => {`,
         `  for (let i = 1; i < arr.length; i++) {`,
-        `    pm.expect(arr[i-1].puntos).to.be.at.least(arr[i].puntos);`,
+        `    pm.expect(arr[i-1].puntosTotales).to.be.at.least(arr[i].puntosTotales);`,
         `  }`,
         `});`,
       ],
@@ -427,6 +488,7 @@ const collection = {
   variable: [
     { key: 'token', value: '' },
     { key: 'idLiga', value: '' },
+    { key: 'idLigaThrowaway', value: '' },
     { key: 'idEquipoLocal', value: '' },
     { key: 'idEquipoVisitante', value: '' },
     { key: 'idEquipoTercero', value: '' },

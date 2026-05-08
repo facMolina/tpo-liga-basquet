@@ -39,13 +39,21 @@ const Equipo = sequelize.define('Equipo', {
     type: DataTypes.INTEGER,
     defaultValue: 0,
   },
-  puntos: {
+  puntosTotales: {
     type: DataTypes.INTEGER,
     defaultValue: 0,
   },
-  diferencia: {
+  diferenciaPuntos: {
     type: DataTypes.INTEGER,
     defaultValue: 0,
+  },
+  idLiga: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'ligas',
+      key: 'idLiga',
+    },
   },
 }, {
   tableName: 'equipos',

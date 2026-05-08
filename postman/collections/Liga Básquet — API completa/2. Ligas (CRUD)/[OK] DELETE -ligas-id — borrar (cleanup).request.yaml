@@ -1,6 +1,6 @@
 $kind: http-request
-name: "[OK] DELETE /ligas/:id — borrar (cleanup)"
-url: "{{baseUrl}}/ligas/{{idLiga}}"
+name: "[OK] DELETE /ligas/:id — borrar throwaway (cleanup)"
+url: "{{baseUrl}}/ligas/{{idLigaThrowaway}}"
 method: DELETE
 headers:
   Authorization: Bearer {{token}}

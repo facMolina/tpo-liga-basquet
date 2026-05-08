@@ -1,0 +1,25 @@
+$kind: http-request
+name: "[OK] POST /ligas — crear throwaway (para test DELETE)"
+url: "{{baseUrl}}/ligas"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: json
+  content: "{\r
+
+    \    \"nombre\": \"Liga Throwaway Test\",\r
+
+    \    \"temporada\": \"2026\",\r
+
+    \    \"descripcion\": \"Liga descartable para testear DELETE sin afectar la liga principal\"\r
+
+    }"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('status 201', () => pm.response.to.have.status(201));
+      pm.collectionVariables.set('idLigaThrowaway', pm.response.json().idLiga);
+    language: text/javascript
+order: 10500

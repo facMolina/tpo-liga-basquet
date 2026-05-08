@@ -11,7 +11,9 @@ body:
 
     \    \"nombre\": \"Equipo_test_local_{{$timestamp}}\",\r
 
-    \    \"entrenador\": \"Coach_test_local\"\r
+    \    \"entrenador\": \"Coach_test_local\",\r
+
+    \    \"idLiga\": {{idLiga}}\r
 
     }"
 scripts:

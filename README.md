@@ -9,26 +9,26 @@ Aplicación web para la gestión integral de una liga de básquet juvenil. Permi
 Pre-requisitos: Node 18+, MySQL 8+, npm.
 
 ```bash
-# 1. Instalar dependencias (desde la raíz del proyecto)
-(cd server && npm install)
-(cd client && npm install)
+# 1. Instalar dependencias del backend
+cd server && npm install
 
 # 2. Crear la base de datos
 mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS liga_basquet;"
 
-# 3. Crear server/.env (ver sección "Configuración del entorno" abajo)
+# 3. Crear server/.env a partir de la plantilla
+cp .env.example .env   # luego editar valores (ver "Configuración del entorno")
 
-# 4. Levantar backend (puerto 3000) y sembrar admin + datos demo
-cd server && npm run dev          # en una terminal
-cd server && npm run seed         # en otra terminal, una sola vez
+# 4. Sembrar admin + datos demo (una sola vez)
+npm run seed
 
-# 5. Levantar frontend (puerto 5173)
-cd client && npm run dev
+# 5. Levantar backend (puerto 3000)
+npm run dev
 ```
 
 - API: http://localhost:3000/api/health
-- Frontend: http://localhost:5173
 - Login admin: `admin` / `adminpassword`
+
+> **Alcance de esta entrega**: el repositorio incluye únicamente el backend operativo. La carpeta `client/` contiene el scaffold inicial de Vite + React + Tailwind pero la interfaz no es parte del alcance documentado. Toda la API se valida mediante la colección Postman provista en `postman/`.
 
 Detalle completo de instalación, variables de entorno y troubleshooting en [Instalación](#instalación) y [Configuración del entorno](#configuración-del-entorno).
 
@@ -61,21 +61,24 @@ Detalle completo de instalación, variables de entorno y troubleshooting en [Ins
 | Autenticación | JWT (jsonwebtoken) | 9.0+ |
 | Cifrado | bcryptjs | 3.0+ |
 | Validación | Zod | 3.23+ |
-| Frontend | React + Vite + Tailwind CSS | 18 / 5 / 4 |
+| Rate limiting | express-rate-limit | 8.3+ |
+| CORS | cors | 2.8+ |
 
 ### Estructura del proyecto
 
 ```
 tpo-liga-basquet/
-├── client/                    # Frontend React + Vite
-│   └── src/
-├── server/                    # Backend Express (MVC)
+├── server/                    # Backend Express (MVC) — alcance de esta entrega
 │   ├── config/database.js     # Conexión Sequelize
 │   ├── models/                # Modelos Sequelize + relaciones
 │   ├── controllers/           # Lógica de negocio + validación Zod
 │   ├── routes/                # Definición de rutas
-│   ├── middleware/auth.js     # Middleware JWT
-│   └── scripts/               # Seeds de datos iniciales
+│   ├── middleware/            # JWT (auth) y validateId
+│   ├── scripts/               # Seeds de datos iniciales
+│   └── .env.example           # Plantilla de variables de entorno
+├── postman/                   # Colección end-to-end (81 requests, 8 folders)
+├── client/                    # Scaffold Vite + React + Tailwind (sin implementar)
+├── documentacion-tecnica.md   # Documentación técnica del backend
 └── testplan.md                # Plan de pruebas de regresión
 ```
 
@@ -114,8 +117,9 @@ El backend sigue una arquitectura MVC estricta: `models/` define las entidades y
 | puntosFavor | INTEGER | Default 0 |
 | puntosEnContra | INTEGER | Default 0 |
 | partidosJugados | INTEGER | Default 0 |
-| puntos | INTEGER | Default 0 |
-| diferencia | INTEGER | Default 0 |
+| puntosTotales | INTEGER | Default 0 |
+| diferenciaPuntos | INTEGER | Default 0 |
+| idLiga | INTEGER | FK → Liga, NOT NULL, ON DELETE RESTRICT |
 
 #### Jugador
 | Campo | Tipo | Restricciones |
@@ -140,6 +144,7 @@ El backend sigue una arquitectura MVC estricta: `models/` define las entidades y
 
 ### Relaciones
 
+- **Liga 1:N Equipo** — FK `idLiga` en Equipo, NOT NULL. RESTRICT: no se puede eliminar una liga con equipos asociados.
 - **Equipo 1:N Jugador** — Si se elimina el equipo, `idEquipo` del jugador se setea en NULL.
 - **Equipo 1:N Partido (Local)** — FK `idLocal`, alias `partidosLocal`. RESTRICT: no se puede eliminar un equipo con partidos asociados.
 - **Equipo 1:N Partido (Visitante)** — FK `idVisitante`, alias `partidosVisitante`. RESTRICT.
@@ -180,7 +185,7 @@ El backend sigue una arquitectura MVC estricta: `models/` define las entidades y
 | Método | Ruta | Auth | Descripción |
 |--------|------|------|-------------|
 | GET | `/api/equipos` | No | Listar todos los equipos |
-| GET | `/api/equipos/:id` | No | Vista detallada: equipo con jugadores y partidos |
+| GET | `/api/equipos/:id` | No | Vista detallada: equipo con `Jugadors`, `partidosLocal`, `partidosVisitante`, `partidosJugados` y `partidosPendientes` (estos dos últimos combinan ambas condiciones, cada partido marcado con `condicion: "Local"\|"Visitante"`) |
 | POST | `/api/equipos` | Sí | Crear equipo |
 | PUT | `/api/equipos/:id` | Sí | Actualizar nombre/entrenador |
 | DELETE | `/api/equipos/:id` | Sí | Eliminar equipo (falla si tiene partidos) |
@@ -199,7 +204,7 @@ El backend sigue una arquitectura MVC estricta: `models/` define las entidades y
 
 | Método | Ruta | Auth | Descripción |
 |--------|------|------|-------------|
-| GET | `/api/partidos` | No | Listar todos los partidos con equipos |
+| GET | `/api/partidos` | No | Listar partidos ordenados por fecha. Acepta query opcionales: `?estado=pendiente\|jugado`, `?desde=YYYY-MM-DD`, `?hasta=YYYY-MM-DD` (combinables) |
 | GET | `/api/partidos/:id` | No | Obtener partido por ID |
 | POST | `/api/partidos` | Sí | Programar partido (fecha, hora, lugar, equipos) |
 | PUT | `/api/partidos/:id` | Sí | Editar partido (solo si no tiene resultado) |
@@ -219,14 +224,14 @@ El backend sigue una arquitectura MVC estricta: `models/` define las entidades y
     "posicion": 1,
     "idEquipo": 2,
     "nombre": "Los Tigres",
-    "puntos": 9,
+    "puntosTotales": 9,
     "PJ": 3,
     "PG": 3,
     "PE": 0,
     "PP": 0,
     "tantosFavor": 250,
     "tantosEnContra": 210,
-    "diferencia": 40
+    "diferenciaPuntos": 40
   }
 ]
 ```
@@ -258,40 +263,37 @@ El backend sigue una arquitectura MVC estricta: `models/` define las entidades y
 ### Pasos
 
 ```bash
-# 1. Posicionarse en la raíz del proyecto (donde están las carpetas client/ y server/)
+# 1. Posicionarse en la raíz del proyecto
 
-# 2. Instalar dependencias
-cd client && npm install && cd ..
-cd server && npm install && cd ..
+# 2. Instalar dependencias del backend
+cd server && npm install
 
 # 3. Crear la base de datos en MySQL
 mysql -u root -p
 > CREATE DATABASE IF NOT EXISTS liga_basquet;
 > EXIT;
 
-# 4. Configurar variables de entorno (ver sección siguiente)
+# 4. Configurar variables de entorno
+cp .env.example .env
+# Editar .env y completar JWT_SECRET, DB_PASSWORD, etc.
 
-# 5. Levantar el backend (sincroniza tablas automáticamente)
-cd server && npm run dev
-
-# 6. Cargar datos iniciales (una sola vez)
-node scripts/seedAdmin.js
-node scripts/seedLiga.js
-# O equivalente:
+# 5. Cargar datos iniciales (una sola vez)
 npm run seed
+# Equivalente a:
+#   node scripts/seedAdmin.js
+#   node scripts/seedLiga.js
 
-# 7. Levantar el frontend (otra terminal)
-cd client && npm run dev
+# 6. Levantar el backend (sincroniza tablas automáticamente)
+npm run dev
 ```
 
 - **Backend:** `http://localhost:3000`
-- **Frontend:** `http://localhost:5173`
 
 ---
 
 ## Configuración del entorno
 
-Crear el archivo `server/.env`:
+Copiar la plantilla `server/.env.example` a `server/.env` y completar los valores:
 
 ```env
 NODE_ENV=development
@@ -307,7 +309,9 @@ ADMIN_PASSWORD=adminpassword
 CORS_ORIGIN=http://localhost:5173,http://localhost:3000
 ```
 
-**Credenciales de prueba:**
+La descripción completa de cada variable está en `server/.env.example`.
+
+**Credenciales de prueba (entorno de evaluación):**
 - Usuario: `admin`
 - Contraseña: `adminpassword`
 

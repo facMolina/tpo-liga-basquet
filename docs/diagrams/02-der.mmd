@@ -1,0 +1,23 @@
+flowchart LR
+    LIGA[Liga]:::entity
+    EQUIPO[Equipo]:::entity
+    JUGADOR[Jugador]:::entity
+    PARTIDO[Partido]:::entity
+    USUARIO[Usuario]:::entity
+
+    R1{tiene}:::rel
+    R2{se compone por}:::rel
+    R3{juega como Local}:::rel
+    R4{juega como Visitante}:::rel
+
+    LIGA -- "1" --- R1
+    R1 -- "N" --- EQUIPO
+    EQUIPO -- "1" --- R2
+    R2 -- "N" --- JUGADOR
+    EQUIPO -- "1" --- R3
+    R3 -- "N" --- PARTIDO
+    EQUIPO -- "1" --- R4
+    R4 -- "N" --- PARTIDO
+
+    classDef entity fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#000
+    classDef rel fill:#fff8e1,stroke:#f57c00,stroke-width:2px,color:#000

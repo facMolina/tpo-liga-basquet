@@ -269,11 +269,11 @@ Usar `POST /api/equipos` como ruta de prueba.
 | ID | Descripción | Esperado |
 |----|-------------|----------|
 | C1 | Sin auth | 200 (endpoint público) |
-| C2 | Con equipos sin partidos | 200 — todos con puntos=0, PJ=0, diferencia=0 |
-| C3 | Campos de respuesta | `posicion`, `idEquipo`, `nombre`, `puntos`, `PJ`, `PG`, `PE`, `PP`, `tantosFavor`, `tantosEnContra`, `diferencia` |
-| C4 | Orden por puntos | Equipo con más puntos en posición 1 |
-| C5 | Desempate: mismos puntos → mayor diferencia primero | A: 3pts +10dif, B: 3pts +5dif → A primero |
-| C6 | Desempate secundario: mismo puntos y diferencia → mayor tantosFavor primero | A: 3pts +5dif 85PF, B: 3pts +5dif 80PF → A primero |
+| C2 | Con equipos sin partidos | 200 — todos con puntosTotales=0, PJ=0, diferenciaPuntos=0 |
+| C3 | Campos de respuesta | `posicion`, `idEquipo`, `nombre`, `puntosTotales`, `PJ`, `PG`, `PE`, `PP`, `tantosFavor`, `tantosEnContra`, `diferenciaPuntos` |
+| C4 | Orden por puntosTotales | Equipo con más puntosTotales en posición 1 |
+| C5 | Desempate: mismos puntosTotales → mayor diferenciaPuntos primero | A: 3pts +10dif, B: 3pts +5dif → A primero |
+| C6 | Desempate secundario: mismo puntosTotales y diferenciaPuntos → mayor tantosFavor primero | A: 3pts +5dif 85PF, B: 3pts +5dif 80PF → A primero |
 | C7 | Sin equipos en DB | 200 `[]` |
 | C8 | Fórmula: ganado=3pts, empatado=1pt, perdido=0pts | PG*3 + PE*1 |
 
@@ -281,7 +281,7 @@ Usar `POST /api/equipos` como ruta de prueba.
 1. Crear equipos A, B, C
 2. Cargar: A gana a B 90-80 (A: 3pts, dif+10), B gana a C 85-75 (B: 3pts, dif+10), A gana a C 80-70 (A: 6pts total)
 3. A (6pts) > B (3pts, dif+10) > C (0pts) — posiciones correctas
-4. Crear equipo D y cargar resultados para que empate en puntos con B pero con menor diferencia → B debe quedar antes que D
+4. Crear equipo D y cargar resultados para que empate en puntosTotales con B pero con menor diferenciaPuntos → B debe quedar antes que D
 
 ---
 

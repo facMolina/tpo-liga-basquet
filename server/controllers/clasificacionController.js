@@ -6,18 +6,18 @@ const getClasificacion = async (req, res) => {
       attributes: [
         'idEquipo',
         'nombre',
-        'puntos',
+        'puntosTotales',
         'partidosJugados',
         'partidosGanados',
         'partidosEmpatados',
         'partidosPerdidos',
         'puntosFavor',
         'puntosEnContra',
-        'diferencia',
+        'diferenciaPuntos',
       ],
       order: [
-        ['puntos', 'DESC'],
-        ['diferencia', 'DESC'],
+        ['puntosTotales', 'DESC'],
+        ['diferenciaPuntos', 'DESC'],
         ['puntosFavor', 'DESC'],
       ],
     });
@@ -28,14 +28,14 @@ const getClasificacion = async (req, res) => {
         posicion: index + 1,
         idEquipo: e.idEquipo,
         nombre: e.nombre,
-        puntos: e.puntos,
+        puntosTotales: e.puntosTotales,
         PJ: e.partidosJugados,
         PG: e.partidosGanados,
         PE: e.partidosEmpatados,
         PP: e.partidosPerdidos,
         tantosFavor: e.puntosFavor,
         tantosEnContra: e.puntosEnContra,
-        diferencia: e.diferencia,
+        diferenciaPuntos: e.diferenciaPuntos,
       };
     });
 

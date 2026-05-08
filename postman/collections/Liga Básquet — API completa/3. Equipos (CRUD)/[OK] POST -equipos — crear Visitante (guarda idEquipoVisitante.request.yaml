@@ -11,7 +11,9 @@ body:
 
     \    \"nombre\": \"Equipo_test_visitante_{{$timestamp}}\",\r
 
-    \    \"entrenador\": \"Coach_test_visitante\"\r
+    \    \"entrenador\": \"Coach_test_visitante\",\r
+
+    \    \"idLiga\": {{idLiga}}\r
 
     }"
 scripts:
