@@ -131,7 +131,7 @@ El diagrama anterior consolida visualmente las tres garantías técnicas de la s
 4. Ejecutar el comando de poblamiento inicial mediante `npm run seed`.
 5. Levantar el servicio en entorno de desarrollo mediante `npm run dev`.
 
-> **Nota sobre el esquema de base de datos**: la sincronización al levantar el servidor se realiza con `sequelize.sync()`. Esta operación crea las tablas faltantes pero **no aplica cambios estructurales sobre tablas existentes** (renombrado de columnas, alteración de claves foráneas, etc.). Si la instancia de MySQL ya contiene un esquema generado por una versión anterior del proyecto, debe recrearse el schema antes de iniciar (`DROP DATABASE liga_basquet; CREATE DATABASE liga_basquet;`) para que el modelo actual quede reflejado correctamente.
+> **Nota sobre el esquema de base de datos**: la sincronización al levantar el servidor se realiza con `sequelize.sync()`. Esta operación crea las tablas faltantes pero **no aplica cambios estructurales sobre tablas existentes**. Si la instancia de MySQL ya contiene un esquema generado por una versión anterior del proyecto, debe recrearse el schema antes de iniciar (`DROP DATABASE liga_basquet; CREATE DATABASE liga_basquet;`) para que el modelo actual quede reflejado correctamente.
 
 ### Variables de Entorno Críticas
 
