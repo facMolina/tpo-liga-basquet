@@ -41,7 +41,7 @@ Para evitar el almacenamiento de contraseñas en texto plano, se emplea la bibli
 
 La gestión de sesiones emplea arquitectura **stateless** mediante JWT. Esto elimina la necesidad de almacenar el estado de la sesión en la memoria del servidor o en bases de datos externas de caché. Este enfoque reduce el consumo de recursos y facilita la escalabilidad horizontal.
 
-- **Generación**: tras la validación de credenciales, el servidor emite un token firmado digitalmente con una clave privada (secreto criptográfico). El token incluye una fecha de expiración estricta de **12 horas** para acotar la ventana de vulnerabilidad ante un posible robo del mismo.
+- **Generación**: tras la validación de credenciales, el servidor emite un token firmado digitalmente con una clave privada. El token incluye una fecha de expiración estricta de **12 horas** para acotar la ventana de vulnerabilidad ante un posible robo del mismo.
 - **Validación**: el middleware de autenticación intercepta las solicitudes a endpoints protegidos. Requiere la presencia de la cabecera `Authorization` bajo el estándar **RFC 6750** con el esquema `Bearer`.
 - **Verificación**: el servidor recalcula la firma del token utilizando la clave secreta. Si el resultado coincide, se garantiza que el payload no sufrió alteraciones por terceros. El ID del usuario contenido en el token se inyecta en la solicitud para su procesamiento.
 
