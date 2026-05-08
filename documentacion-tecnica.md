@@ -161,7 +161,7 @@ El script de inicialización provee una base de datos preconfigurada para valida
 - **`seedLiga.js`**: construye un contexto funcional compuesto por:
   - **Una liga** (`Liga de Basquet Juvenil`, temporada `1C 2026`).
   - **Cuatro equipos** asociados a la liga: Halcones Rojos, Tigres Azules, Águilas Doradas y Lobos Plateados, cada uno con su entrenador asignado.
-  - **Cinco jugadores por equipo** (veinte en total) en categoría Juvenil.
+  - **Cinco jugadores por equipo** en categoría Juvenil.
 
 El conjunto resultante habilita la ejecución manual de pruebas sobre los endpoints de actualización de resultados (`POST /api/partidos/:id/resultado`), facilitando la verificación del comportamiento atómico de las transacciones documentadas en la sección 4.
 
