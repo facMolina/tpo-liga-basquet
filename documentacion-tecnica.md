@@ -71,7 +71,7 @@ El DER expresa el modelo de dominio en notación Chen: las **entidades** se repr
 
 ![Diagrama Entidad-Relación (DER)](docs/diagrams/02-der.png)
 
-La entidad `Usuario` queda fuera del grafo de dominio deportivo: no participa en ninguna relación con las demás entidades, ya que su único propósito es habilitar el control de acceso al área administrativa (autenticación stateless mediante JWT).
+La entidad `Usuario` queda fuera del grafo de dominio deportivo: no participa en ninguna relación con las demás entidades, ya que su único propósito es habilitar el control de acceso al área administrativa.
 
 #### Modelo Relacional — Vista física
 
