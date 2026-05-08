@@ -328,7 +328,36 @@ Postman es un cliente HTTP para probar APIs. La colección y el environment est�
 3. En el dropdown de environments (arriba a la derecha) → seleccionar `liga-basquet (local)`.
 4. La variable `token` se setea automáticamente al correr el request `[OK] POST /auth/login — admin (extrae token)` del folder `1. Auth`.
 
-Para correr toda la colección end-to-end: click derecho sobre la colección → **Run collection**. Detalles en [`postman/README.md`](./postman/README.md).
+Para correr toda la colección end-to-end: click derecho sobre la colección → **Run collection**. Todos los requests deben pasar (verde).
+
+### Por CLI con Newman
+
+Si preferís validar la colección sin abrir Postman (útil en CI o para evaluación rápida):
+
+```bash
+cd postman
+npx --yes newman@6 run liga-basquet.postman_collection.json -e liga-basquet.postman_environment.json
+```
+
+Exit code `0` = todos los assertions OK. La colección cubre **87 requests / 8 folders** sobre los 6 recursos de la API más smoke test, autenticación y clasificación.
+
+### Re-ejecución sobre la misma DB
+
+La colección deja datos en la DB (ligas, equipos, jugadores, partido con resultado). Los nombres incluyen `{{$timestamp}}` para evitar 409 de duplicado, así que se puede re-correr sin limpiar. Si querés ejecutarla sobre una base limpia:
+
+```bash
+mysql -u root -e "DROP DATABASE liga_basquet; CREATE DATABASE liga_basquet;"
+cd server && npm run seed   # vuelve a crear admin + datos demo
+```
+
+### Si algún test falla
+
+| Síntoma | Diagnóstico |
+|---------|-------------|
+| `[OK] ...` con 4xx/5xx | Bug en el backend o el test asume una shape de response que cambió. Comparar con el response real (`curl ...` directo). |
+| `[FAIL 4xx] ...` con 200 | Regresión: el backend dejó de validar algo que antes validaba. |
+| 401 generalizado | El token expiró (12h) o el extract del login falló. Re-correr desde el folder `1. Auth`. |
+| 500 con "Unknown column" en logs | DB con schema viejo. `DROP DATABASE` y recrear, después `npm run seed` y reintentar. |
 
 ### Flujo básico de prueba
 
